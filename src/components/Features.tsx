@@ -1,28 +1,48 @@
 import { motion } from 'framer-motion'
-import { BookOpenIcon, GlobeIcon, ZapIcon, ShieldIcon } from 'lucide-react'
+import {
+    NetworkIcon,
+    ShieldCheckIcon,
+    BarChart3Icon,
+    FileSearchIcon,
+    GitBranchIcon,
+    ZapIcon,
+} from 'lucide-react'
 const features = [
     {
-        icon: BookOpenIcon,
-        title: 'Digital Archives',
+        icon: NetworkIcon,
+        title: 'Dependency Mapping',
         description:
-            'Access over 10M digital books, journals, and multimedia resources',
+            'Deep dependency tracking and resource relationship visualization across your entire infrastructure',
     },
     {
-        icon: GlobeIcon,
-        title: 'Global Network',
+        icon: ShieldCheckIcon,
+        title: 'Security Scanning',
         description:
-            'Connect with libraries worldwide through our integrated system',
+            'Built-in security validation and compliance checks with SARIF output for CI/CD integration',
+    },
+    {
+        icon: BarChart3Icon,
+        title: 'Interactive Reports',
+        description:
+            'Rich HTML reports with multiple themes and layouts for comprehensive infrastructure insights',
+    },
+    {
+        icon: FileSearchIcon,
+        title: 'Multi-Format Export',
+        description:
+            'Export analysis data in JSON, YAML, CSV, XML, and TOML formats for seamless integration',
+    },
+    {
+        icon: GitBranchIcon,
+        title: 'Module Analysis',
+        description:
+            'Detailed inspection of Terraform modules, variables, outputs, and provider configurations',
     },
     {
         icon: ZapIcon,
-        title: 'Instant Access',
+        title: 'CI/CD Ready',
         description:
-            'Lightning-fast search and retrieval powered by quantum algorithms',
-    },
-    {
-        icon: ShieldIcon,
-        title: 'Secure Platform',
-        description: 'Enterprise-grade security protecting your data and privacy',
+            'Automation-friendly CLI with validation checks and fail-on-warning capabilities',
     },
 ]
 export function Features() {
@@ -48,14 +68,15 @@ export function Features() {
                 >
                     <h2 className="text-5xl md:text-6xl font-bold mb-4">
             <span className="bg-gradient-to-r from-cyan-400 to-purple-400 bg-clip-text text-transparent">
-              Next-Gen Features
+              Powerful Features
             </span>
                     </h2>
                     <p className="text-xl text-gray-400">
-                        Powered by advanced technology
+                        Everything you need to understand and optimize your Terraform
+                        infrastructure
                     </p>
                 </motion.div>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     {features.map((feature, index) => (
                         <motion.div
                             key={index}
@@ -77,7 +98,6 @@ export function Features() {
                             className="group"
                         >
                             <div className="relative p-8 rounded-2xl border border-cyan-500/20 bg-gradient-to-br from-gray-900/50 to-gray-800/50 backdrop-blur-sm hover:border-cyan-500/50 transition-all duration-300 h-full">
-                                {/* Glow effect on hover */}
                                 <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/0 to-purple-500/0 group-hover:from-cyan-500/10 group-hover:to-purple-500/10 rounded-2xl transition-all duration-300" />
                                 <div className="relative">
                                     <div className="w-14 h-14 mb-6 rounded-xl bg-gradient-to-br from-cyan-500/20 to-purple-500/20 flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
