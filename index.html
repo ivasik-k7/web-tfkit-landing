@@ -1,28 +1,34 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="dark">
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/x-icon" href="/favicon.ico" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>TFKit - Terraform Intelligence & Analysis Suite</title>
 
+    <!-- Essential Meta Tags -->
+    <meta name="theme-color" content="#7C3AED" />
+
+    <!-- Primary Meta Tags -->
+    <title>TFKit - Terraform Intelligence & Analysis Suite</title>
     <meta
       name="title"
       content="TFKit - Terraform Intelligence & Analysis Suite"
     />
     <meta
       name="description"
-      content="A comprehensive toolkit for analyzing, visualizing, and validating Terraform infrastructure code with advanced dependency tracking, security scanning, and interactive visualizations."
+      content="A toolkit for analyzing, visualizing, and validating Terraform infrastructure code with advanced dependency tracking, security scanning, and interactive visualizations."
     />
     <meta
       name="keywords"
-      content="terraform, infrastructure as code, security scanning, visualization, validation, dependency tracking, CI/CD, infrastructure analysis, cloud infrastructure"
+      content="terraform, infrastructure as code, security scanning, visualization, validation, dependency tracking, CI/CD, infrastructure analysis, cloud infrastructure, hashicorp, devops"
     />
     <meta name="author" content="ivasik-k7" />
     <meta name="version" content="0.4.43" />
+    <meta name="robots" content="index, follow, max-image-preview:large" />
 
+    <!-- Open Graph / Facebook -->
     <meta property="og:type" content="website" />
-    <meta property="og:url" content="https://github.com/ivasik-k7/tfkit" />
+    <meta property="og:url" content="https://tfkit.netlify.app/" />
     <meta
       property="og:title"
       content="TFKit - Terraform Intelligence & Analysis Suite"
@@ -31,30 +37,483 @@
       property="og:description"
       content="A toolkit for analyzing, visualizing, and validating Terraform infrastructure code with advanced dependency tracking, security scanning, and interactive visualizations."
     />
+    <meta
+      property="og:image"
+      content="https://tfkit.netlify.app/og-image.jpg"
+    />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:site_name" content="TFKit" />
 
     <!-- Twitter -->
     <meta property="twitter:card" content="summary_large_image" />
-    <meta property="twitter:url" content="https://github.com/ivasik-k7/tfkit" />
+    <meta property="twitter:url" content="https://tfkit.netlify.app/" />
     <meta
       property="twitter:title"
       content="TFKit - Terraform Intelligence & Analysis Suite"
     />
     <meta
       property="twitter:description"
-      content="A comprehensive toolkit for analyzing, visualizing, and validating Terraform infrastructure code with advanced dependency tracking, security scanning, and interactive visualizations."
+      content="A toolkit for analyzing, visualizing, and validating Terraform infrastructure code with advanced dependency tracking, security scanning, and interactive visualizations."
     />
-    <meta property="twitter:image" content="https://iili.io/KPVF9cv.md.png" />
+    <meta
+      property="twitter:image"
+      content="https://tfkit.netlify.app/twitter-image.jpg"
+    />
 
-    <!-- Additional Meta Tags -->
-    <meta name="application-name" content="TFKit" />
-    <meta name="theme-color" content="#000000" />
-    <meta name="robots" content="index, follow" />
-    <meta name="language" content="English" />
-    <meta name="category" content="Technology" />
-    <meta name="generator" content="Vite" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="TFKit" />
+    <meta name="format-detection" content="telephone=no" />
+    <meta name="HandheldFriendly" content="true" />
+    <meta name="mobile-web-app-capable" content="yes" />
+
+    <!-- Favicon & App Icons -->
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
+    <link rel="manifest" href="/site.webmanifest" />
+    <link rel="mask-icon" href="/safari-pinned-tab.svg" color="#7C3AED" />
+
+    <link rel="preload" href="/src/main.tsx" as="script" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="referrer" content="strict-origin-when-cross-origin" />
+
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "WebApplication",
+        "name": "TFKit - Terraform Intelligence & Analysis Suite",
+        "description": "A toolkit for analyzing, visualizing, and validating Terraform infrastructure code with advanced dependency tracking, security scanning, and interactive visualizations.",
+        "url": "https://tfkit.netlify.app",
+        "applicationCategory": "DeveloperApplication",
+        "operatingSystem": "Any",
+        "permissions": "browser",
+        "author": {
+          "@type": "Person",
+          "name": "ivasik-k7"
+        },
+        "offers": {
+          "@type": "Offer",
+          "price": "0",
+          "priceCurrency": "USD"
+        },
+        "keywords": "terraform, infrastructure as code, security scanning, visualization, devops"
+      }
+    </script>
+
+    <style>
+      :root {
+        --primary-color: #7c3aed;
+        --secondary-color: #2563eb;
+        --background-color: #ffffff;
+        --text-color: #1f2937;
+      }
+
+      .dark {
+        --background-color: #0f172a;
+        --text-color: #f8fafc;
+      }
+
+      body {
+        margin: 0;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto",
+          "Oxygen", "Ubuntu", "Cantarell", sans-serif;
+        background-color: var(--background-color);
+        color: var(--text-color);
+        transition: background-color 0.3s ease, color 0.3s ease;
+        line-height: 1.6;
+      }
+
+      #root {
+        min-height: 100vh;
+      }
+
+      /* Enhanced Loading Screen matching your Hero design */
+      .loading-screen {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        overflow: hidden;
+        background: linear-gradient(
+          135deg,
+          #000000 0%,
+          #0f172a 50%,
+          #1e293b 100%
+        );
+        z-index: 9999;
+        color: white;
+        opacity: 1;
+        transition: opacity 0.5s ease-out;
+      }
+
+      .loading-screen.fade-out {
+        opacity: 0;
+        pointer-events: none;
+      }
+
+      /* Animated background grid */
+      .background-grid {
+        position: absolute;
+        inset: 0;
+        background-image: linear-gradient(
+            rgba(124, 58, 237, 0.1) 1px,
+            transparent 1px
+          ),
+          linear-gradient(90deg, rgba(124, 58, 237, 0.1) 1px, transparent 1px);
+        background-size: 50px 50px;
+        animation: gridMove 20s linear infinite;
+      }
+
+      @keyframes gridMove {
+        0% {
+          transform: translate(0, 0);
+        }
+        100% {
+          transform: translate(50px, 50px);
+        }
+      }
+
+      /* Glowing orbs */
+      .orb {
+        position: absolute;
+        border-radius: 50%;
+        filter: blur(80px);
+        opacity: 0.3;
+        animation: pulse 4s ease-in-out infinite;
+      }
+
+      .orb-1 {
+        top: 20%;
+        left: 10%;
+        width: 400px;
+        height: 400px;
+        background: #7c3aed;
+        animation-delay: 0s;
+      }
+
+      .orb-2 {
+        bottom: 20%;
+        right: 10%;
+        width: 500px;
+        height: 500px;
+        background: #2563eb;
+        animation-delay: 2s;
+      }
+
+      @keyframes pulse {
+        0%,
+        100% {
+          opacity: 0.2;
+          transform: scale(1);
+        }
+        50% {
+          opacity: 0.4;
+          transform: scale(1.1);
+        }
+      }
+
+      /* Loading content */
+      .loading-content {
+        position: relative;
+        z-index: 10;
+        text-align: center;
+        max-width: 800px;
+        padding: 2rem;
+      }
+
+      .logo-text {
+        font-size: clamp(4rem, 10vw, 7rem);
+        font-weight: 800;
+        margin-bottom: 1rem;
+        background: linear-gradient(
+          135deg,
+          #7c3aed 0%,
+          #2563eb 50%,
+          #06b6d4 100%
+        );
+        background-clip: text;
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-size: 200% 200%;
+        animation: gradientShift 3s ease infinite;
+      }
+
+      @keyframes gradientShift {
+        0%,
+        100% {
+          background-position: 0% 50%;
+        }
+        50% {
+          background-position: 100% 50%;
+        }
+      }
+
+      .subtitle {
+        font-size: clamp(1.25rem, 3vw, 1.75rem);
+        font-weight: 300;
+        color: #cbd5e1;
+        margin-bottom: 2rem;
+        opacity: 0;
+        animation: fadeInUp 0.8s ease 0.3s forwards;
+      }
+
+      .description {
+        font-size: clamp(0.9rem, 2vw, 1.1rem);
+        color: #94a3b8;
+        margin-bottom: 3rem;
+        max-width: 500px;
+        margin-left: auto;
+        margin-right: auto;
+        line-height: 1.6;
+        opacity: 0;
+        animation: fadeInUp 0.8s ease 0.6s forwards;
+      }
+
+      /* Enhanced spinner */
+      .advanced-spinner {
+        width: 50px;
+        height: 50px;
+        border: 3px solid transparent;
+        border-top: 3px solid #7c3aed;
+        border-right: 3px solid #2563eb;
+        border-bottom: 3px solid #06b6d4;
+        border-radius: 50%;
+        animation: spin 1.5s linear infinite, colors 3s ease-in-out infinite;
+        margin: 0 auto 2rem;
+        opacity: 0;
+        animation: fadeIn 0.8s ease 0.9s forwards, spin 1.5s linear infinite,
+          colors 3s ease-in-out infinite;
+      }
+
+      @keyframes colors {
+        0%,
+        100% {
+          border-top-color: #7c3aed;
+          border-right-color: #2563eb;
+          border-bottom-color: #06b6d4;
+        }
+        33% {
+          border-top-color: #2563eb;
+          border-right-color: #06b6d4;
+          border-bottom-color: #7c3aed;
+        }
+        66% {
+          border-top-color: #06b6d4;
+          border-right-color: #7c3aed;
+          border-bottom-color: #2563eb;
+        }
+      }
+
+      @keyframes spin {
+        0% {
+          transform: rotate(0deg);
+        }
+        100% {
+          transform: rotate(360deg);
+        }
+      }
+
+      @keyframes fadeInUp {
+        from {
+          opacity: 0;
+          transform: translateY(20px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      @keyframes fadeIn {
+        from {
+          opacity: 0;
+        }
+        to {
+          opacity: 1;
+        }
+      }
+
+      /* Status text */
+      .status-text {
+        color: #64748b;
+        font-size: 0.85rem;
+        margin-top: 1rem;
+        opacity: 0;
+        animation: fadeIn 0.8s ease 1.2s forwards;
+      }
+
+      .pulse {
+        animation: textPulse 2s ease-in-out infinite;
+      }
+
+      @keyframes textPulse {
+        0%,
+        100% {
+          opacity: 0.7;
+        }
+        50% {
+          opacity: 1;
+        }
+      }
+    </style>
   </head>
   <body>
+    <noscript>
+      <div
+        style="
+          text-align: center;
+          padding: 50px;
+          font-family: Arial, sans-serif;
+          max-width: 600px;
+          margin: 0 auto;
+        "
+      >
+        <h1 style="color: #7c3aed">JavaScript Required</h1>
+        <p>
+          TFKit requires JavaScript to function. Please enable JavaScript to use
+          the Terraform Intelligence & Analysis Suite.
+        </p>
+      </div>
+    </noscript>
+
+    <!-- Enhanced loading screen matching your Hero design -->
+    <div id="loading-screen" class="loading-screen">
+      <!-- Animated background grid -->
+      <div class="background-grid"></div>
+
+      <!-- Glowing orbs -->
+      <div class="orb orb-1"></div>
+      <div class="orb orb-2"></div>
+
+      <!-- Content -->
+      <div class="loading-content">
+        <div class="advanced-spinner"></div>
+        <h1 class="logo-text">TFKit</h1>
+        <h2 class="subtitle">Terraform Intelligence & Analysis Suite</h2>
+        <p class="description">
+          Comprehensive toolkit for analyzing, visualizing, and validating
+          Terraform infrastructure code with advanced dependency tracking,
+          security scanning, and interactive visualizations
+        </p>
+        <div class="status-text pulse" id="loading-status">
+          Initializing application...
+        </div>
+      </div>
+    </div>
+
+    <!-- Your React app mounts here -->
     <div id="root"></div>
+
     <script type="module" src="/src/main.tsx"></script>
+
+    <script>
+      // Enhanced loading screen management
+      const loadingScreen = document.getElementById("loading-screen");
+      const loadingStatus = document.getElementById("loading-status");
+
+      // Status messages for better UX
+      const statusMessages = [
+        "Loading core modules...",
+        "Initializing Terraform analyzer...",
+        "Setting up visualization engine...",
+        "Preparing security scanner...",
+        "Almost ready...",
+      ];
+
+      let currentStatus = 0;
+      let appLoaded = false;
+
+      function updateLoadingStatus() {
+        if (
+          loadingStatus &&
+          currentStatus < statusMessages.length &&
+          !appLoaded
+        ) {
+          loadingStatus.textContent = statusMessages[currentStatus];
+          currentStatus++;
+          setTimeout(updateLoadingStatus, 600);
+        }
+      }
+
+      function hideLoadingScreen() {
+        if (loadingScreen && !appLoaded) {
+          appLoaded = true;
+          loadingScreen.classList.add("fade-out");
+          setTimeout(() => {
+            loadingScreen.style.display = "none";
+          }, 500);
+        }
+      }
+
+      // Start status updates after a brief delay
+      setTimeout(updateLoadingStatus, 300);
+
+      // Hide loading screen when React app loads
+      window.addEventListener("load", function () {
+        // Give React a moment to render, then hide loading screen
+        setTimeout(hideLoadingScreen, 300);
+      });
+
+      // Fallback: hide loading screen after max 3 seconds
+      setTimeout(hideLoadingScreen, 3000);
+
+      // Environment-specific code (production only)
+      if (
+        window.location.hostname !== "localhost" &&
+        window.location.hostname !== "127.0.0.1"
+      ) {
+        window.addEventListener("load", function () {
+          if ("performance" in window) {
+            const perfData = performance.timing;
+            const loadTime = perfData.loadEventEnd - perfData.navigationStart;
+            if (loadTime > 0) {
+              console.log("TFKit loaded in:", loadTime + "ms");
+            }
+          }
+        });
+
+        if ("serviceWorker" in navigator) {
+          window.addEventListener("load", function () {
+            navigator.serviceWorker
+              .register("/sw.js")
+              .then(function (registration) {
+                console.log("TFKit Service Worker registered: ", registration);
+              })
+              .catch(function (registrationError) {
+                console.log(
+                  "TFKit Service Worker registration failed: ",
+                  registrationError
+                );
+              });
+          });
+        }
+      }
+
+      // Theme detection
+      if (
+        window.matchMedia &&
+        window.matchMedia("(prefers-color-scheme: dark)").matches
+      ) {
+        document.documentElement.classList.add("dark");
+      }
+
+      // Error handlers
+      window.addEventListener("error", function (e) {
+        console.error("TFKit Error:", e.error);
+      });
+
+      window.addEventListener("unhandledrejection", function (e) {
+        console.error("TFKit Promise Rejection:", e.reason);
+      });
+    </script>
   </body>
 </html>
