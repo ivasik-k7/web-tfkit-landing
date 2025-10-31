@@ -507,7 +507,9 @@ const GraphDemo: React.FC = () => {
             .append('rect')
             .attr('width', '100%')
             .attr('height', '100%')
-            .attr('fill', `url(#grid-${theme})`);
+            .attr('fill', `url(#grid-${theme})`)
+            .style('cursor', 'default')
+            .attr('class', 'background-rect');
 
         // Glow filter
         const glowFilter = defs.append('filter').attr('id', 'glow-filter');
@@ -559,6 +561,17 @@ const GraphDemo: React.FC = () => {
         svg.on('wheel', (event: any) => {
             event.preventDefault();
         }, { passive: false });
+
+        // Add click handler to background (not nodes) to clear highlights
+        svg.on('click', function(event) {
+            // Only clear if clicking the background (svg or rect), not a node
+            const target = event.target;
+            if (target === this ||
+                target.tagName === 'rect' && target.classList.contains('background-rect') ||
+                target.tagName === 'svg') {
+                handleClearHighlight();
+            }
+        });
 
         // Copy data
         const nodes = data.nodes.map(d => ({ ...d }));
@@ -1040,54 +1053,6 @@ const GraphDemo: React.FC = () => {
                 }}
             >
                 <button
-                    onClick={() => (window as any).graphReset?.()}
-                    style={{
-                        backgroundColor: colors.bg_primary,
-                        border: `1px solid ${colors.border}`,
-                        color: colors.text_primary,
-                        padding: '8px 16px',
-                        borderRadius: '25px',
-                        cursor: 'pointer',
-                        fontSize: '14px',
-                        fontWeight: 500,
-                        transition: 'all 0.2s',
-                    }}
-                    onMouseEnter={e => {
-                        e.currentTarget.style.backgroundColor = colors.accent;
-                        e.currentTarget.style.color = colors.bg_primary;
-                    }}
-                    onMouseLeave={e => {
-                        e.currentTarget.style.backgroundColor = colors.bg_primary;
-                        e.currentTarget.style.color = colors.text_primary;
-                    }}
-                >
-                    Reset
-                </button>
-                <button
-                    onClick={() => setPhysicsEnabled(!physicsEnabled)}
-                    style={{
-                        backgroundColor: colors.bg_primary,
-                        border: `1px solid ${colors.border}`,
-                        color: colors.text_primary,
-                        padding: '8px 16px',
-                        borderRadius: '25px',
-                        cursor: 'pointer',
-                        fontSize: '14px',
-                        fontWeight: 500,
-                        transition: 'all 0.2s',
-                    }}
-                    onMouseEnter={e => {
-                        e.currentTarget.style.backgroundColor = colors.accent;
-                        e.currentTarget.style.color = colors.bg_primary;
-                    }}
-                    onMouseLeave={e => {
-                        e.currentTarget.style.backgroundColor = colors.bg_primary;
-                        e.currentTarget.style.color = colors.text_primary;
-                    }}
-                >
-                    {physicsEnabled ? 'Physics On' : 'Physics Off'}
-                </button>
-                <button
                     onClick={() => (window as any).graphCenter?.()}
                     style={{
                         backgroundColor: colors.bg_primary,
@@ -1324,12 +1289,12 @@ export default GraphDemo;
 // ============================================================================
 
 /*
-import GraphEmbed from './GraphEmbed';
+import GraphDemo from './GraphDemo';
 
 function App() {
   return (
     <div style={{ padding: '20px' }}>
-      <GraphEmbed />
+      <GraphDemo />
     </div>
   );
 }
