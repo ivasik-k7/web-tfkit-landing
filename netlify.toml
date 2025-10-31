@@ -17,3 +17,9 @@
   for = "/*.html"
   [headers.values]
     Content-Type = "text/html"
+
+[[headers]]
+  for = "/sw.js"
+  [headers.values]
+    Cache-Control = "no-cache, no-store, must-revalidate"
+    CDN-Cache-Control = "no-cache"

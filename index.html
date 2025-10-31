@@ -549,21 +549,21 @@
           }
         });
 
-        if ("serviceWorker" in navigator) {
-          window.addEventListener("load", function () {
-            navigator.serviceWorker
-              .register("/sw.js")
-              .then(function (registration) {
-                console.log("TFKit Service Worker registered: ", registration);
-              })
-              .catch(function (registrationError) {
-                console.log(
-                  "TFKit Service Worker registration failed: ",
-                  registrationError
-                );
-              });
-          });
-        }
+        // if ("serviceWorker" in navigator) {
+        //   window.addEventListener("load", function () {
+        //     navigator.serviceWorker
+        //       .register("/sw.js")
+        //       .then(function (registration) {
+        //         console.log("TFKit Service Worker registered: ", registration);
+        //       })
+        //       .catch(function (registrationError) {
+        //         console.log(
+        //           "TFKit Service Worker registration failed: ",
+        //           registrationError
+        //         );
+        //       });
+        //   });
+        // }
       }
 
       // Theme detection
