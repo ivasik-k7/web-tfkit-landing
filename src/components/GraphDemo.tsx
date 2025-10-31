@@ -1,631 +1,1351 @@
-import { useEffect, useMemo, useState, useRef } from 'react';
+import React, { useEffect, useRef, useState, useMemo } from 'react';
 import * as d3 from 'd3';
-import { CodeIcon, ArrowRightIcon, DatabaseIcon, SettingsIcon, NetworkIcon, LayersIcon, MaximizeIcon, CrosshairIcon, ZapIcon, SparklesIcon, TargetIcon, BoxIcon, ZoomInIcon, ZoomOutIcon } from 'lucide-react';
 
-interface Node {
-  id: string;
-  label: string;
-  type: 'resource' | 'module' | 'variable' | 'output' | 'data' | 'provider';
-  state: 'healthy' | 'unused' | 'external' | 'leaf' | 'orphan' | 'warning';
-  dependencies_out: number;
-  dependencies_in: number;
-  x?: number;
-  y?: number;
-  fx?: number | null;
-  fy?: number | null;
-}
+// ============================================================================
+// TYPE DEFINITIONS
+// ============================================================================
 
-interface Edge {
-  source: string | Node;
-  target: string | Node;
-}
-
-const sampleNodes: Node[] = [{
-  id: '1',
-  label: 'aws_vpc.main',
-  type: 'resource',
-  state: 'healthy',
-  dependencies_out: 0,
-  dependencies_in: 5
-}, {
-  id: '2',
-  label: 'aws_subnet.public',
-  type: 'resource',
-  state: 'healthy',
-  dependencies_out: 1,
-  dependencies_in: 3
-}, {
-  id: '3',
-  label: 'aws_instance.web',
-  type: 'resource',
-  state: 'warning',
-  dependencies_out: 2,
-  dependencies_in: 0
-}, {
-  id: '4',
-  label: 'module.networking',
-  type: 'module',
-  state: 'healthy',
-  dependencies_out: 0,
-  dependencies_in: 8
-}, {
-  id: '5',
-  label: 'var.region',
-  type: 'variable',
-  state: 'external',
-  dependencies_out: 0,
-  dependencies_in: 4
-}, {
-  id: '6',
-  label: 'aws_security_group.unused',
-  type: 'resource',
-  state: 'unused',
-  dependencies_out: 0,
-  dependencies_in: 0
-}, {
-  id: '7',
-  label: 'data.aws_ami.latest',
-  type: 'data',
-  state: 'healthy',
-  dependencies_out: 0,
-  dependencies_in: 2
-}, {
-  id: '8',
-  label: 'output.vpc_id',
-  type: 'output',
-  state: 'healthy',
-  dependencies_out: 1,
-  dependencies_in: 0
-}, {
-  id: '9',
-  label: 'module.database',
-  type: 'module',
-  state: 'healthy',
-  dependencies_out: 2,
-  dependencies_in: 4
-}, {
-  id: '10',
-  label: 'var.environment',
-  type: 'variable',
-  state: 'external',
-  dependencies_out: 0,
-  dependencies_in: 6
-}, {
-  id: '11',
-  label: 'aws_iam_role.app',
-  type: 'resource',
-  state: 'healthy',
-  dependencies_out: 1,
-  dependencies_in: 2
-}, {
-  id: '12',
-  label: 'provider.aws',
-  type: 'provider',
-  state: 'healthy',
-  dependencies_out: 0,
-  dependencies_in: 12
-}];
-
-const sampleEdges: Edge[] = [{
-  source: '2',
-  target: '1'
-}, {
-  source: '3',
-  target: '2'
-}, {
-  source: '3',
-  target: '7'
-}, {
-  source: '4',
-  target: '1'
-}, {
-  source: '4',
-  target: '2'
-}, {
-  source: '8',
-  target: '1'
-}, {
-  source: '9',
-  target: '4'
-}, {
-  source: '11',
-  target: '3'
-}];
-
-const nodeConfig = {
-  resource: {
-    color: '#10b981',
-    icon: BoxIcon
-  },
-  module: {
-    color: '#8b5cf6',
-    icon: BoxIcon
-  },
-  variable: {
-    color: '#f59e0b',
-    icon: CodeIcon
-  },
-  output: {
-    color: '#06b6d4',
-    icon: ArrowRightIcon
-  },
-  data: {
-    color: '#ef4444',
-    icon: DatabaseIcon
-  },
-  provider: {
-    color: '#06b6d4',
-    icon: SettingsIcon
-  }
+type GraphNode = {
+    id: string;
+    label: string;
+    type: 'resource' | 'module' | 'variable' | 'output' | 'data' | 'provider' | 'local' | 'terraform';
+    subtype?: string;
+    state?: 'external_data' | 'integrated' | 'active' | 'input' | 'orphaned' | 'configuration' | 'unused' | 'incomplete' | string;
+    state_reason?: string;
+    dependencies_in?: number;
+    dependencies_out?: number;
+    details?: Record<string, unknown>;
+    x?: number;
+    y?: number;
+    fx?: number | null;
+    fy?: number | null;
 };
 
-interface StateConfig {
-  stroke: string;
-  glow: string;
-}
-
-const stateConfig: Record<string, StateConfig> = {
-  healthy: {
-    stroke: '#10b981',
-    glow: '#10b98140'
-  },
-  unused: {
-    stroke: '#ef4444',
-    glow: '#ef444440'
-  },
-  external: {
-    stroke: '#06b6d4',
-    glow: '#06b6d440'
-  },
-  leaf: {
-    stroke: '#10b981',
-    glow: '#10b98140'
-  },
-  orphan: {
-    stroke: '#f59e0b',
-    glow: '#f59e0b40'
-  },
-  warning: {
-    stroke: '#f59e0b',
-    glow: '#f59e0b40'
-  }
+type GraphEdge = {
+    source: string | GraphNode;
+    target: string | GraphNode;
+    type?: string;
+    strength?: number;
 };
 
-export function GraphDemo() {
-  const svgRef = useRef<SVGSVGElement>(null);
-  const containerRef = useRef<HTMLDivElement>(null);
-  const [physicsEnabled, setPhysicsEnabled] = useState(true);
-  const [animationsEnabled, setAnimationsEnabled] = useState(true);
-  const [highlightedNode, setHighlightedNode] = useState<string | null>(null);
-  const simulationRef = useRef<d3.Simulation<Node, Edge> | null>(null);
-  const zoomRef = useRef<d3.ZoomBehavior<SVGSVGElement, unknown> | null>(null);
+type GraphData = {
+    nodes: GraphNode[];
+    edges: GraphEdge[];
+};
 
-  const stats = useMemo(() => {
-    const stateCounts: Record<string, number> = {};
-    sampleNodes.forEach(node => {
-      stateCounts[node.state] = (stateCounts[node.state] || 0) + 1;
+// ============================================================================
+// SAMPLE DATA
+// ============================================================================
+
+const SAMPLE_DATA: GraphData = {
+    nodes: [
+        {
+            id: '1',
+            label: 'aws_vpc.main',
+            type: 'resource',
+            state: 'active',
+            dependencies_in: 5,
+            dependencies_out: 0,
+            details: { provider: 'aws', resource_type: 'vpc', file: 'main.tf', line: 12 }
+        },
+        {
+            id: '2',
+            label: 'aws_subnet.public_1',
+            type: 'resource',
+            state: 'active',
+            dependencies_in: 3,
+            dependencies_out: 1,
+            details: { provider: 'aws', resource_type: 'subnet', file: 'network.tf', line: 45 }
+        },
+        {
+            id: '3',
+            label: 'aws_subnet.public_2',
+            type: 'resource',
+            state: 'active',
+            dependencies_in: 3,
+            dependencies_out: 1,
+            details: { provider: 'aws', resource_type: 'subnet', file: 'network.tf', line: 67 }
+        },
+        {
+            id: '4',
+            label: 'aws_instance.web',
+            type: 'resource',
+            state: 'active',
+            dependencies_in: 1,
+            dependencies_out: 3,
+            details: { provider: 'aws', resource_type: 'instance', file: 'compute.tf', line: 23 }
+        },
+        {
+            id: '5',
+            label: 'module.networking',
+            type: 'module',
+            state: 'integrated',
+            dependencies_in: 8,
+            dependencies_out: 2,
+            details: { file: 'modules.tf', line: 5 }
+        },
+        {
+            id: '6',
+            label: 'var.region',
+            type: 'variable',
+            state: 'external_data',
+            dependencies_in: 4,
+            dependencies_out: 0,
+            details: { file: 'variables.tf', line: 1 }
+        },
+        {
+            id: '7',
+            label: 'var.environment',
+            type: 'variable',
+            state: 'external_data',
+            dependencies_in: 6,
+            dependencies_out: 0,
+            details: { file: 'variables.tf', line: 8 }
+        },
+        {
+            id: '8',
+            label: 'aws_security_group.web',
+            type: 'resource',
+            state: 'active',
+            dependencies_in: 2,
+            dependencies_out: 2,
+            details: { provider: 'aws', resource_type: 'security_group', file: 'security.tf', line: 15 }
+        },
+        {
+            id: '9',
+            label: 'aws_security_group.unused',
+            type: 'resource',
+            state: 'unused',
+            dependencies_in: 0,
+            dependencies_out: 0,
+            details: { provider: 'aws', resource_type: 'security_group', file: 'security.tf', line: 89 }
+        },
+        {
+            id: '10',
+            label: 'data.aws_ami.latest',
+            type: 'data',
+            state: 'external_data',
+            dependencies_in: 2,
+            dependencies_out: 0,
+            details: { provider: 'aws', resource_type: 'ami', file: 'data.tf', line: 3 }
+        },
+        {
+            id: '11',
+            label: 'output.vpc_id',
+            type: 'output',
+            state: 'active',
+            dependencies_in: 0,
+            dependencies_out: 1,
+            details: { file: 'outputs.tf', line: 1 }
+        },
+        {
+            id: '12',
+            label: 'output.subnet_ids',
+            type: 'output',
+            state: 'active',
+            dependencies_in: 0,
+            dependencies_out: 2,
+            details: { file: 'outputs.tf', line: 5 }
+        },
+        {
+            id: '13',
+            label: 'module.database',
+            type: 'module',
+            state: 'integrated',
+            dependencies_in: 4,
+            dependencies_out: 2,
+            details: { file: 'modules.tf', line: 25 }
+        },
+        {
+            id: '14',
+            label: 'aws_db_instance.main',
+            type: 'resource',
+            state: 'active',
+            dependencies_in: 2,
+            dependencies_out: 3,
+            details: { provider: 'aws', resource_type: 'db_instance', file: 'database.tf', line: 34 }
+        },
+        {
+            id: '15',
+            label: 'aws_iam_role.app',
+            type: 'resource',
+            state: 'active',
+            dependencies_in: 2,
+            dependencies_out: 1,
+            details: { provider: 'aws', resource_type: 'iam_role', file: 'iam.tf', line: 12 }
+        },
+        {
+            id: '16',
+            label: 'provider.aws',
+            type: 'provider',
+            state: 'configuration',
+            dependencies_in: 12,
+            dependencies_out: 0,
+            details: { file: 'provider.tf', line: 1 }
+        },
+        {
+            id: '17',
+            label: 'aws_route_table.orphaned',
+            type: 'resource',
+            state: 'orphaned',
+            dependencies_in: 1,
+            dependencies_out: 0,
+            details: { provider: 'aws', resource_type: 'route_table', file: 'network.tf', line: 156 }
+        },
+        {
+            id: '18',
+            label: 'local.common_tags',
+            type: 'local',
+            state: 'active',
+            dependencies_in: 8,
+            dependencies_out: 0,
+            details: { file: 'locals.tf', line: 1 }
+        }
+    ],
+    edges: [
+        { source: '2', target: '1' },
+        { source: '3', target: '1' },
+        { source: '4', target: '2' },
+        { source: '4', target: '8' },
+        { source: '4', target: '10' },
+        { source: '5', target: '1' },
+        { source: '5', target: '2' },
+        { source: '8', target: '1' },
+        { source: '8', target: '5' },
+        { source: '11', target: '1' },
+        { source: '12', target: '2' },
+        { source: '12', target: '3' },
+        { source: '13', target: '5' },
+        { source: '13', target: '1' },
+        { source: '14', target: '13' },
+        { source: '14', target: '2' },
+        { source: '14', target: '8' },
+        { source: '15', target: '4' },
+        { source: '17', target: '1' }
+    ]
+};
+
+// ============================================================================
+// THEME CONFIGURATION
+// ============================================================================
+
+const THEMES = {
+    dark: {
+        bg_primary: '#0f172a',
+        bg_secondary: '#1e293b',
+        bg_tertiary: '#334155',
+        text_primary: '#f1f5f9',
+        text_secondary: '#94a3b8',
+        accent: '#06b6d4',
+        accent_secondary: '#8b5cf6',
+        border: '#334155',
+        success: '#10b981',
+        warning: '#f59e0b',
+        danger: '#ef4444',
+        info: '#3b82f6',
+    },
+    light: {
+        bg_primary: '#ffffff',
+        bg_secondary: '#f8fafc',
+        bg_tertiary: '#e2e8f0',
+        text_primary: '#0f172a',
+        text_secondary: '#64748b',
+        accent: '#0891b2',
+        accent_secondary: '#7c3aed',
+        border: '#cbd5e1',
+        success: '#059669',
+        warning: '#d97706',
+        danger: '#dc2626',
+        info: '#2563eb',
+    },
+};
+
+// ============================================================================
+// NODE & STATE CONFIGURATION
+// ============================================================================
+
+const NODE_CONFIG = {
+    resource: { color: '#10b981', icon: '\uf1b3' },
+    module: { color: '#8b5cf6', icon: '\uf1b3' },
+    variable: { color: '#f59e0b', icon: '\uf121' },
+    output: { color: '#06b6d4', icon: '\uf061' },
+    data: { color: '#ef4444', icon: '\uf1c0' },
+    provider: { color: '#3b82f6', icon: '\uf013' },
+    local: { color: '#3b82f6', icon: '\uf121' },
+    terraform: { color: '#06b6d4', icon: '\uf0e8' },
+};
+
+const STATE_CONFIG: Record<string, { stroke: string; glow: string }> = {
+    external_data: { stroke: '#a855f7', glow: '#a855f740' },
+    integrated: { stroke: '#84cc16', glow: '#84cc1640' },
+    active: { stroke: '#22c55e', glow: '#22c55e40' },
+    input: { stroke: '#3b82f6', glow: '#3b82f640' },
+    orphaned: { stroke: '#fb923c', glow: '#fb923c40' },
+    configuration: { stroke: '#8b5cf6', glow: '#8b5cf640' },
+    unused: { stroke: '#f59e0b', glow: '#f59e0b40' },
+    incomplete: { stroke: '#ef4444', glow: '#ef444440' },
+};
+
+// ============================================================================
+// HELPER UTILITIES
+// ============================================================================
+
+function hexagonPath(size: number): string {
+    const points: [number, number][] = [];
+    for (let i = 0; i < 6; i++) {
+        const angle = (i * Math.PI) / 3;
+        points.push([size * Math.sin(angle), size * Math.cos(angle)]);
+    }
+    return `M${points.map(p => p.join(',')).join('L')}Z`;
+}
+
+function calculateMetrics(data: GraphData) {
+    const nodeMap = new Map<string, GraphNode>();
+    const adjacencyList = new Map<string, { in: string[]; out: string[] }>();
+
+    data.nodes.forEach(node => {
+        nodeMap.set(node.id, node);
+        adjacencyList.set(node.id, { in: [], out: [] });
     });
 
-    const nodeMap = new Map<string, Node>();
-    const adjacencyList = new Map<string, {
-      in: string[];
-      out: string[];
-    }>();
+    data.edges.forEach(edge => {
+        const sourceId = typeof edge.source === 'object' ? edge.source.id : edge.source;
+        const targetId = typeof edge.target === 'object' ? edge.target.id : edge.target;
 
-    sampleNodes.forEach(node => {
-      nodeMap.set(node.id, node);
-      adjacencyList.set(node.id, {
-        in: [],
-        out: []
-      });
+        adjacencyList.get(sourceId)?.out.push(targetId);
+        adjacencyList.get(targetId)?.in.push(sourceId);
     });
 
-    sampleEdges.forEach(edge => {
-      const sourceId = typeof edge.source === 'object' ? edge.source.id : edge.source;
-      const targetId = typeof edge.target === 'object' ? edge.target.id : edge.target;
-      adjacencyList.get(sourceId)?.out.push(targetId);
-      adjacencyList.get(targetId)?.in.push(sourceId);
-    });
-
+    // Calculate connected components
     const visited = new Set<string>();
     let components = 0;
 
-    const dfs = (nodeId: string) => {
-      const stack = [nodeId];
-      while (stack.length) {
-        const current = stack.pop()!;
-        if (!visited.has(current)) {
-          visited.add(current);
-          const neighbors = [...(adjacencyList.get(current)?.in || []), ...(adjacencyList.get(current)?.out || [])];
-          neighbors.forEach(neighbor => {
-            if (!visited.has(neighbor)) stack.push(neighbor);
-          });
+    function dfs(nodeId: string) {
+        const stack = [nodeId];
+        while (stack.length) {
+            const current = stack.pop()!;
+            if (!visited.has(current)) {
+                visited.add(current);
+                const neighbors = [
+                    ...(adjacencyList.get(current)?.in || []),
+                    ...(adjacencyList.get(current)?.out || []),
+                ];
+                neighbors.forEach(neighbor => {
+                    if (!visited.has(neighbor)) stack.push(neighbor);
+                });
+            }
         }
-      }
-    };
+    }
 
-    sampleNodes.forEach(node => {
-      if (!visited.has(node.id)) {
-        dfs(node.id);
-        components++;
-      }
+    data.nodes.forEach(node => {
+        if (!visited.has(node.id)) {
+            dfs(node.id);
+            components++;
+        }
     });
+
+    // Calculate average dependencies
+    const totalDeps = data.nodes.reduce(
+        (sum, node) => sum + (node.dependencies_in || 0) + (node.dependencies_out || 0),
+        0
+    );
+    const avgDependencies = (totalDeps / (data.nodes.length * 2)).toFixed(1);
+
+    // Calculate max depth
+    function calculateMaxDepth(): number {
+        const visited = new Set<string>();
+        let maxDepth = 0;
+
+        function dfs(nodeId: string, depth = 0): number {
+            if (visited.has(nodeId)) return depth;
+            visited.add(nodeId);
+            maxDepth = Math.max(maxDepth, depth);
+
+            const outgoing = adjacencyList.get(nodeId)?.out || [];
+            outgoing.forEach(targetId => {
+                dfs(targetId, depth + 1);
+            });
+            return depth;
+        }
+
+        data.nodes.forEach(node => {
+            if (!visited.has(node.id)) {
+                dfs(node.id);
+            }
+        });
+
+        return maxDepth;
+    }
+
+    const maxDepth = calculateMaxDepth();
+    const complexityScore = Math.min(
+        Math.round((parseFloat(avgDependencies) * maxDepth) / 2),
+        10
+    );
 
     return {
-      totalNodes: sampleNodes.length,
-      totalEdges: sampleEdges.length,
-      components,
-      stateCounts
+        totalNodes: data.nodes.length,
+        totalEdges: data.edges.length,
+        components,
+        avgDependencies,
+        maxDepth,
+        complexityScore,
+        nodeMap,
+        adjacencyList,
     };
-  }, []);
+}
 
-  useEffect(() => {
-    if (!svgRef.current || !containerRef.current) return;
+function findCentralNodes(data: GraphData, limit = 5): string[] {
+    return data.nodes
+        .map(node => ({
+            id: node.id,
+            connections: (node.dependencies_in || 0) + (node.dependencies_out || 0),
+        }))
+        .sort((a, b) => b.connections - a.connections)
+        .slice(0, limit)
+        .map(n => n.id);
+}
 
-    const container = containerRef.current;
-    const width = container.clientWidth;
-    const height = container.clientHeight;
+function findIsolatedNodes(data: GraphData): string[] {
+    return data.nodes
+        .filter(node => (node.dependencies_in || 0) === 0 && (node.dependencies_out || 0) === 0)
+        .map(n => n.id);
+}
 
-    d3.select(svgRef.current).selectAll('*').remove();
+function findCriticalPath(
+    data: GraphData,
+    adjacencyList: Map<string, { in: string[]; out: string[] }>
+): string[] {
+    const visited = new Set<string>();
+    let criticalPath: string[] = [];
+    let maxLength = 0;
 
-    const svg = d3.select(svgRef.current)
-      .attr('width', width)
-      .attr('height', height);
+    function dfs(nodeId: string, path: string[] = []) {
+        if (visited.has(nodeId)) return;
+        visited.add(nodeId);
+        path.push(nodeId);
 
-    const defs = svg.append('defs');
-
-    // Grid pattern
-    const gridSize = 50;
-    defs.append('pattern')
-      .attr('id', 'grid')
-      .attr('width', gridSize)
-      .attr('height', gridSize)
-      .attr('patternUnits', 'userSpaceOnUse')
-      .append('path')
-      .attr('d', `M ${gridSize} 0 L 0 0 0 ${gridSize}`)
-      .attr('fill', 'none')
-      .attr('stroke', '#9ca3af')
-      .attr('stroke-opacity', 0.1)
-      .attr('stroke-width', 1);
-
-    svg.append('rect')
-      .attr('width', '100%')
-      .attr('height', '100%')
-      .attr('fill', 'url(#grid)');
-
-    // Glow filters for nodes
-    const glowFilter = defs.append('filter').attr('id', 'glow');
-    glowFilter.append('feGaussianBlur')
-      .attr('stdDeviation', '3')
-      .attr('result', 'coloredBlur');
-    const feMerge = glowFilter.append('feMerge');
-    feMerge.append('feMergeNode').attr('in', 'coloredBlur');
-    feMerge.append('feMergeNode').attr('in', 'SourceGraphic');
-
-    // Arrow markers
-    Object.entries(nodeConfig).forEach(([type, config]) => {
-      defs.append('marker')
-        .attr('id', `arrow-${type}`)
-        .attr('viewBox', '0 -5 10 10')
-        .attr('refX', 18)
-        .attr('refY', 0)
-        .attr('markerWidth', 8)
-        .attr('markerHeight', 8)
-        .attr('orient', 'auto')
-        .append('path')
-        .attr('d', 'M0,-5L10,0L0,5')
-        .style('fill', config.color)
-        .style('opacity', 0.7);
-    });
-
-    const g = svg.append('g');
-    const graphG = g.append('g');
-
-    // Zoom behavior - DISABLED for mouse/touchpad, only programmatic control
-    const zoom = d3.zoom<SVGSVGElement, unknown>()
-      .scaleExtent([0.05, 8])
-      .on('zoom', (event) => {
-        g.attr('transform', event.transform.toString());
-      });
-
-    // Store zoom reference for programmatic control
-    zoomRef.current = zoom;
-
-    // Apply zoom behavior but disable mouse/touchpad events
-    svg.call(zoom)
-      .on("wheel.zoom", null)  // Disable mouse wheel zoom
-      .on("dblclick.zoom", null); // Disable double-click zoom
-
-    // Create copies of data
-    const nodes = sampleNodes.map(d => ({ ...d }));
-    const edges = sampleEdges.map(d => ({ ...d }));
-
-    // Create simulation
-    const simulation = d3.forceSimulation(nodes)
-      .force('link', d3.forceLink(edges)
-        .id((d: any) => d.id)
-        .distance(100)
-        .strength(0.2))
-      .force('charge', d3.forceManyBody().strength(-400))
-      .force('center', d3.forceCenter(width / 2, height / 2).strength(0.1))
-      .force('collision', d3.forceCollide().radius(20));
-
-    simulationRef.current = simulation;
-
-    // Create links
-    const link = graphG.append('g')
-      .selectAll('line')
-      .data(edges)
-      .join('line')
-      .attr('class', 'link')
-      .attr('stroke', '#9ca3af')
-      .attr('stroke-opacity', 0.3)
-      .attr('stroke-width', 1.5)
-      .attr('marker-end', (d: any) => {
-        const target = nodes.find(n => n.id === (typeof d.target === 'object' ? d.target.id : d.target));
-        return target ? `url(#arrow-${target.type})` : '';
-      });
-
-    // Create nodes
-    const node = graphG.append('g')
-      .selectAll('g')
-      .data(nodes)
-      .join('g')
-      .attr('class', 'node')
-      .style('cursor', 'pointer')
-      .on('mouseenter', function (event, d) {
-        if (animationsEnabled) {
-          d3.select(this).select('circle')
-            .transition()
-            .duration(200)
-            .attr('r', (d: any) => {
-              const baseRadius = d.type === 'module' ? 14 : d.type === 'resource' ? 11 : 9;
-              const depCount = d.dependencies_out + d.dependencies_in;
-              return baseRadius + Math.min(depCount * 0.6, 6) + 3;
-            })
-            .style('filter', 'url(#glow)');
+        if (path.length > maxLength) {
+            maxLength = path.length;
+            criticalPath = [...path];
         }
-      })
-      .on('mouseleave', function (event, d) {
-        if (animationsEnabled) {
-          d3.select(this).select('circle')
-            .transition()
-            .duration(200)
-            .attr('r', (d: any) => {
-              const baseRadius = d.type === 'module' ? 14 : d.type === 'resource' ? 11 : 9;
-              const depCount = d.dependencies_out + d.dependencies_in;
-              return baseRadius + Math.min(depCount * 0.6, 6);
-            })
-            .style('filter', (d: any) => `drop-shadow(0 0 8px ${stateConfig[d.state].glow})`);
-        }
-      })
-      .on('click', function (event, d) {
-        setHighlightedNode(highlightedNode === d.id ? null : d.id);
-      })
-      .call(d3.drag<any, Node>()
-        .on('start', (event, d) => {
-          if (!event.active) simulation.alphaTarget(0.3).restart();
-          d.fx = d.x;
-          d.fy = d.y;
-        })
-        .on('drag', (event, d) => {
-          d.fx = event.x;
-          d.fy = event.y;
-        })
-        .on('end', (event, d) => {
-          if (!event.active) simulation.alphaTarget(0);
-        })
-      );
 
-    node.append('circle')
-      .attr('r', d => {
-        const baseRadius = d.type === 'module' ? 14 : d.type === 'resource' ? 11 : 9;
-        const depCount = d.dependencies_out + d.dependencies_in;
-        return baseRadius + Math.min(depCount * 0.6, 6);
-      })
-      .style('fill', d => nodeConfig[d.type].color)
-      .style('stroke', d => stateConfig[d.state].stroke)
-      .style('stroke-width', 2)
-      .style('filter', d => `drop-shadow(0 0 8px ${stateConfig[d.state].glow})`);
-
-    // Add pulse animation to nodes with warnings
-    if (animationsEnabled) {
-      node.filter((d: any) => d.state === 'warning' || d.state === 'unused')
-        .select('circle')
-        .style('animation', 'pulse 2s ease-in-out infinite');
+        const outgoing = adjacencyList.get(nodeId)?.out || [];
+        outgoing.forEach(targetId => {
+            dfs(targetId, [...path]);
+        });
     }
 
-    node.append('text')
-      .attr('dx', d => {
-        const baseRadius = d.type === 'module' ? 14 : d.type === 'resource' ? 11 : 9;
-        const depCount = d.dependencies_out + d.dependencies_in;
-        return baseRadius + Math.min(depCount * 0.6, 6) + 4;
-      })
-      .attr('dy', 4)
-      .text(d => {
-        const maxLength = d.type === 'module' ? 25 : 18;
-        return d.label.length > maxLength ? d.label.substring(0, maxLength) + '...' : d.label;
-      })
-      .style('fill', '#fff')
-      .style('font-size', d => d.type === 'module' ? '12px' : '11px')
-      .style('font-weight', '500')
-      .style('pointer-events', 'none')
-      .style('text-shadow', '0 1px 4px #000');
-
-    simulation.on('tick', () => {
-      link
-        .attr('x1', (d: any) => d.source.x)
-        .attr('y1', (d: any) => d.source.y)
-        .attr('x2', (d: any) => d.target.x)
-        .attr('y2', (d: any) => d.target.y);
-
-      node.attr('transform', d => `translate(${d.x},${d.y})`);
+    data.nodes.forEach(node => {
+        if (!visited.has(node.id)) {
+            dfs(node.id);
+        }
     });
 
-    // Programmatic zoom controls
-    const zoomIn = () => {
-      svg.transition().duration(300).call(zoom.scaleBy, 1.2);
+    return criticalPath;
+}
+
+// ============================================================================
+// MAIN COMPONENT
+// ============================================================================
+
+const GraphDemo: React.FC = () => {
+    const containerRef = useRef<HTMLDivElement>(null);
+    const svgRef = useRef<SVGSVGElement>(null);
+    const simulationRef = useRef<d3.Simulation<GraphNode, GraphEdge> | null>(null);
+    const [physicsEnabled, setPhysicsEnabled] = useState(true);
+    const [hoveredNode, setHoveredNode] = useState<GraphNode | null>(null);
+    const [tooltipPos, setTooltipPos] = useState({ x: 0, y: 0 });
+    const [highlightedNodes, setHighlightedNodes] = useState<Set<string>>(new Set());
+    const [highlightedEdges, setHighlightedEdges] = useState<Set<string>>(new Set());
+
+    // Use hardcoded values
+    const data = SAMPLE_DATA;
+    const title = 'Infrastructure Dependency Graph';
+    const theme = 'dark';
+    const height = 600;
+
+    const colors = THEMES[theme];
+
+    const metrics = useMemo(() => calculateMetrics(data), []);
+
+    // Initialize graph
+    useEffect(() => {
+        if (!svgRef.current || !containerRef.current) return;
+
+        const container = containerRef.current;
+        const width = container.clientWidth;
+        const height = container.clientHeight;
+
+        // Clear existing
+        d3.select(svgRef.current).selectAll('*').remove();
+
+        const svg = d3
+            .select(svgRef.current)
+            .attr('width', width)
+            .attr('height', height);
+
+        // Defs
+        const defs = svg.append('defs');
+
+        // Grid pattern
+        const gridSize = 50;
+        defs
+            .append('pattern')
+            .attr('id', `grid-${theme}`)
+            .attr('width', gridSize)
+            .attr('height', gridSize)
+            .attr('patternUnits', 'userSpaceOnUse')
+            .append('path')
+            .attr('d', `M ${gridSize} 0 L 0 0 0 ${gridSize}`)
+            .attr('fill', 'none')
+            .attr('stroke', colors.text_secondary)
+            .attr('stroke-opacity', 0.1)
+            .attr('stroke-width', 1);
+
+        svg
+            .append('rect')
+            .attr('width', '100%')
+            .attr('height', '100%')
+            .attr('fill', `url(#grid-${theme})`);
+
+        // Glow filter
+        const glowFilter = defs.append('filter').attr('id', 'glow-filter');
+        glowFilter
+            .append('feGaussianBlur')
+            .attr('stdDeviation', '3')
+            .attr('result', 'coloredBlur');
+        const feMerge = glowFilter.append('feMerge');
+        feMerge.append('feMergeNode').attr('in', 'coloredBlur');
+        feMerge.append('feMergeNode').attr('in', 'SourceGraphic');
+
+        // Arrow markers
+        Object.entries(NODE_CONFIG).forEach(([type, config]) => {
+            defs
+                .append('marker')
+                .attr('id', `arrow-${type}-${theme}`)
+                .attr('viewBox', '0 -5 10 10')
+                .attr('refX', 20)
+                .attr('refY', 0)
+                .attr('markerWidth', 8)
+                .attr('markerHeight', 8)
+                .attr('orient', 'auto')
+                .append('path')
+                .attr('d', 'M0,-5L10,0L0,5')
+                .style('fill', config.color)
+                .style('opacity', 0.7);
+        });
+
+        const g = svg.append('g');
+        const graphG = g.append('g');
+
+        // Zoom behavior with wheel prevention
+        const zoom = d3
+            .zoom<SVGSVGElement, unknown>()
+            .scaleExtent([0.05, 8])
+            .wheelDelta(function (event) {
+                // Prevent page scroll
+                event.preventDefault();
+                const delta = -event.deltaY * (event.deltaMode ? 120 : 1) / 500;
+                return delta * 0.2;
+            })
+            .on('zoom', event => {
+                g.attr('transform', event.transform.toString());
+            });
+
+        svg.call(zoom);
+
+        // Prevent default wheel behavior on the SVG
+        svg.on('wheel', (event: any) => {
+            event.preventDefault();
+        }, { passive: false });
+
+        // Copy data
+        const nodes = data.nodes.map(d => ({ ...d }));
+        const edges = data.edges.map(d => ({ ...d }));
+
+        // Create simulation
+        const simulation = d3
+            .forceSimulation(nodes)
+            .force(
+                'link',
+                d3
+                    .forceLink(edges)
+                    .id((d: any) => d.id)
+                    .distance(100)
+                    .strength(0.2)
+            )
+            .force('charge', d3.forceManyBody().strength(-400).distanceMax(400))
+            .force('center', d3.forceCenter(width / 2, height / 2).strength(0.1))
+            .force(
+                'collision',
+                d3
+                    .forceCollide()
+                    .radius((d: any) => {
+                        const baseRadius = d.type === 'module' ? 16 : d.type === 'resource' ? 13 : 11;
+                        const depCount = (d.dependencies_out || 0) + (d.dependencies_in || 0);
+                        return baseRadius + Math.min(depCount * 0.6, 6);
+                    })
+                    .strength(0.8)
+            )
+            .alphaDecay(0.0228)
+            .velocityDecay(0.4);
+
+        simulationRef.current = simulation;
+
+        // Create links
+        const link = graphG
+            .append('g')
+            .selectAll('line')
+            .data(edges)
+            .join('line')
+            .attr('class', 'link')
+            .attr('stroke', colors.text_secondary)
+            .attr('stroke-opacity', 0.4)
+            .attr('stroke-width', 1.5)
+            .attr('marker-end', (d: any) => {
+                const target = nodes.find(n => n.id === (typeof d.target === 'object' ? d.target.id : d.target));
+                return target ? `url(#arrow-${target.type}-${theme})` : '';
+            })
+            .style('stroke-linecap', 'round');
+
+        // Create nodes
+        const node = graphG
+            .append('g')
+            .selectAll('g')
+            .data(nodes)
+            .join('g')
+            .attr('class', 'node')
+            .style('cursor', 'pointer')
+            .on('mouseenter', function (event, d) {
+                setHoveredNode(d);
+                const rect = containerRef.current!.getBoundingClientRect();
+                setTooltipPos({
+                    x: event.clientX - rect.left,
+                    y: event.clientY - rect.top,
+                });
+
+                d3.select(this)
+                    .select('path')
+                    .transition()
+                    .duration(200)
+                    .style('filter', 'url(#glow-filter)');
+            })
+            .on('mousemove', function (event) {
+                const rect = containerRef.current!.getBoundingClientRect();
+                setTooltipPos({
+                    x: event.clientX - rect.left,
+                    y: event.clientY - rect.top,
+                });
+            })
+            .on('mouseleave', function (event, d) {
+                setHoveredNode(null);
+                const state = d.state || 'active';
+                const stateGlow = STATE_CONFIG[state]?.glow || '#66666640';
+
+                d3.select(this)
+                    .select('path')
+                    .transition()
+                    .duration(200)
+                    .style('filter', `drop-shadow(0 0 8px ${stateGlow})`);
+            })
+            .on('click', function (event, d) {
+                event.stopPropagation();
+                const newHighlighted = new Set<string>();
+                const newEdges = new Set<string>();
+
+                newHighlighted.add(d.id);
+
+                edges.forEach(edge => {
+                    const sourceId = typeof edge.source === 'object' ? edge.source.id : edge.source;
+                    const targetId = typeof edge.target === 'object' ? edge.target.id : edge.target;
+
+                    if (sourceId === d.id || targetId === d.id) {
+                        newHighlighted.add(sourceId);
+                        newHighlighted.add(targetId);
+                        newEdges.add(`${sourceId}->${targetId}`);
+                    }
+                });
+
+                setHighlightedNodes(newHighlighted);
+                setHighlightedEdges(newEdges);
+            })
+            .call(
+                d3
+                    .drag<any, GraphNode>()
+                    .on('start', (event, d) => {
+                        if (!event.active) simulation.alphaTarget(0.3).restart();
+                        d.fx = d.x;
+                        d.fy = d.y;
+                    })
+                    .on('drag', (event, d) => {
+                        d.fx = event.x;
+                        d.fy = event.y;
+                    })
+                    .on('end', (event, d) => {
+                        if (!event.active) simulation.alphaTarget(0);
+                    })
+            );
+
+        // Node shapes (hexagons)
+        node
+            .append('path')
+            .attr('class', 'node-shape')
+            .attr('d', (d: any) => {
+                const baseSize = d.type === 'module' ? 16 : d.type === 'resource' ? 13 : 11;
+                const depCount = (d.dependencies_out || 0) + (d.dependencies_in || 0);
+                const size = baseSize + Math.min(depCount * 0.6, 6);
+                return hexagonPath(size);
+            })
+            .style('fill', (d: any) => NODE_CONFIG[d.type]?.color || '#666')
+            .style('stroke', (d: any) => {
+                const state = d.state || 'active';
+                return STATE_CONFIG[state]?.stroke || '#666';
+            })
+            .style('stroke-width', 2)
+            .style('fill-opacity', 0.9)
+            .style('filter', (d: any) => {
+                const state = d.state || 'active';
+                const stateGlow = STATE_CONFIG[state]?.glow || '#66666640';
+                return `drop-shadow(0 0 8px ${stateGlow})`;
+            })
+            .style('transition', 'all 0.3s ease');
+
+        // Node labels
+        node
+            .append('text')
+            .attr('dx', (d: any) => {
+                const baseRadius = d.type === 'module' ? 16 : d.type === 'resource' ? 13 : 11;
+                const depCount = (d.dependencies_out || 0) + (d.dependencies_in || 0);
+                return baseRadius + Math.min(depCount * 0.6, 6) + 4;
+            })
+            .attr('dy', 4)
+            .text((d: any) => {
+                const maxLength = d.type === 'module' ? 25 : 18;
+                return d.label.length > maxLength ? d.label.substring(0, maxLength) + '...' : d.label;
+            })
+            .style('fill', colors.text_primary)
+            .style('font-size', (d: any) => (d.type === 'module' ? '12px' : '11px'))
+            .style('font-weight', '500')
+            .style('pointer-events', 'none')
+            .style('text-shadow', `0 1px 4px ${colors.bg_primary}`);
+
+        // Tick function
+        simulation.on('tick', () => {
+            link
+                .attr('x1', (d: any) => d.source.x)
+                .attr('y1', (d: any) => d.source.y)
+                .attr('x2', (d: any) => d.target.x)
+                .attr('y2', (d: any) => d.target.y);
+
+            node.attr('transform', (d: any) => `translate(${d.x},${d.y})`);
+        });
+
+        // Store zoom functions
+        (window as any).graphZoomIn = () => {
+            svg.transition().duration(300).call(zoom.scaleBy, 1.2);
+        };
+        (window as any).graphZoomOut = () => {
+            svg.transition().duration(300).call(zoom.scaleBy, 1 / 1.2);
+        };
+        (window as any).graphReset = () => {
+            svg.transition().duration(500).call(zoom.transform, d3.zoomIdentity);
+            setHighlightedNodes(new Set());
+            setHighlightedEdges(new Set());
+        };
+        (window as any).graphCenter = () => {
+            const transform = d3.zoomIdentity
+                .translate(width / 2, height / 2)
+                .scale(1)
+                .translate(-width / 2, -height / 2);
+            svg.transition().duration(500).call(zoom.transform, transform);
+        };
+
+        return () => {
+            simulation.stop();
+        };
+    }, [data, theme, colors]);
+
+    // Apply highlights
+    useEffect(() => {
+        if (!svgRef.current) return;
+
+        const svg = d3.select(svgRef.current);
+
+        svg
+            .selectAll('.node')
+            .transition()
+            .duration(300)
+            .style('opacity', (d: any) =>
+                highlightedNodes.size === 0 || highlightedNodes.has(d.id) ? 1 : 0.2
+            );
+
+        svg
+            .selectAll('.link')
+            .transition()
+            .duration(300)
+            .style('stroke-opacity', (edge: any) => {
+                if (highlightedEdges.size === 0) return 0.4;
+                const sourceId = typeof edge.source === 'object' ? edge.source.id : edge.source;
+                const targetId = typeof edge.target === 'object' ? edge.target.id : edge.target;
+                const edgeKey = `${sourceId}->${targetId}`;
+                return highlightedEdges.has(edgeKey) ? 1 : 0.1;
+            })
+            .style('stroke', (edge: any) => {
+                if (highlightedEdges.size === 0) return colors.text_secondary;
+                const sourceId = typeof edge.source === 'object' ? edge.source.id : edge.source;
+                const targetId = typeof edge.target === 'object' ? edge.target.id : edge.target;
+                const edgeKey = `${sourceId}->${targetId}`;
+                const target = data.nodes.find(n => n.id === targetId);
+                return highlightedEdges.has(edgeKey)
+                    ? NODE_CONFIG[target?.type || 'resource']?.color || colors.accent
+                    : colors.text_secondary;
+            })
+            .attr('stroke-dasharray', (edge: any) => {
+                if (highlightedEdges.size === 0) return 'none';
+                const sourceId = typeof edge.source === 'object' ? edge.source.id : edge.source;
+                const targetId = typeof edge.target === 'object' ? edge.target.id : edge.target;
+                const edgeKey = `${sourceId}->${targetId}`;
+                return highlightedEdges.has(edgeKey) ? '5,8' : 'none';
+            });
+    }, [highlightedNodes, highlightedEdges, colors, data.nodes]);
+
+    // Toggle physics
+    useEffect(() => {
+        if (simulationRef.current) {
+            if (physicsEnabled) {
+                simulationRef.current.alpha(0.3).restart();
+            } else {
+                simulationRef.current.stop();
+            }
+        }
+    }, [physicsEnabled]);
+
+    const handleClearHighlight = () => {
+        setHighlightedNodes(new Set());
+        setHighlightedEdges(new Set());
     };
 
-    const zoomOut = () => {
-      svg.transition().duration(300).call(zoom.scaleBy, 1 / 1.2);
+    const handleHighlightCentral = () => {
+        const centralIds = findCentralNodes(data);
+        const newHighlighted = new Set<string>(centralIds);
+        const newEdges = new Set<string>();
+
+        centralIds.forEach(nodeId => {
+            data.edges.forEach(edge => {
+                const sourceId = typeof edge.source === 'object' ? edge.source.id : edge.source;
+                const targetId = typeof edge.target === 'object' ? edge.target.id : edge.target;
+
+                if (sourceId === nodeId || targetId === nodeId) {
+                    newHighlighted.add(sourceId);
+                    newHighlighted.add(targetId);
+                    newEdges.add(`${sourceId}->${targetId}`);
+                }
+            });
+        });
+
+        setHighlightedNodes(newHighlighted);
+        setHighlightedEdges(newEdges);
     };
 
-    const resetZoom = () => {
-      svg.transition().duration(500).call(zoom.transform, d3.zoomIdentity);
+    const handleHighlightIsolated = () => {
+        const isolatedIds = findIsolatedNodes(data);
+        setHighlightedNodes(new Set(isolatedIds));
+        setHighlightedEdges(new Set());
     };
 
-    const centerGraph = () => {
-      const transform = d3.zoomIdentity
-        .translate(width / 2, height / 2)
-        .scale(1)
-        .translate(-width / 2, -height / 2);
-      svg.transition().duration(500).call(zoom.transform, transform);
+    const handleHighlightCriticalPath = () => {
+        const path = findCriticalPath(data, metrics.adjacencyList);
+        const newHighlighted = new Set<string>(path);
+        const newEdges = new Set<string>();
+
+        path.forEach((nodeId, idx) => {
+            if (idx < path.length - 1) {
+                newEdges.add(`${nodeId}->${path[idx + 1]}`);
+            }
+        });
+
+        setHighlightedNodes(newHighlighted);
+        setHighlightedEdges(newEdges);
     };
 
-    // Store functions for button access
-    (window as any).graphZoomIn = zoomIn;
-    (window as any).graphZoomOut = zoomOut;
-    (window as any).graphResetZoom = resetZoom;
-    (window as any).graphCenter = centerGraph;
+    return (
+        <div
+            ref={containerRef}
+            style={{
+                position: 'relative',
+                width: '100%',
+                height: `${height}px`,
+                backgroundColor: colors.bg_primary,
+                borderRadius: '12px',
+                overflow: 'hidden',
+                fontFamily: 'system-ui, -apple-system, sans-serif',
+            }}
+        >
+            <style>{`
+        @keyframes flow {
+          to {
+            stroke-dashoffset: -20;
+          }
+        }
+        .link.highlight {
+          animation: flow 1.5s linear infinite;
+        }
+      `}</style>
 
-    return () => {
-      simulation.stop();
-    };
-  }, [animationsEnabled, highlightedNode]);
+            <svg
+                ref={svgRef}
+                style={{ width: '100%', height: '100%', display: 'block' }}
+            />
 
-  const togglePhysics = () => {
-    setPhysicsEnabled(!physicsEnabled);
-    if (simulationRef.current) {
-      if (!physicsEnabled) {
-        simulationRef.current.alpha(0.3).restart();
-      } else {
-        simulationRef.current.stop();
-      }
-    }
-  };
-
-  return (
-    <div ref={containerRef} className="relative w-full h-[600px] bg-gray-900 rounded-xl overflow-hidden">
-      <svg ref={svgRef} className="w-full h-full" />
-
-      {/* HUD Panel */}
-      <div className="absolute top-5 left-5 bg-gray-800/90 backdrop-blur-md border border-cyan-500/60 rounded-2xl p-6 min-w-[260px]">
-        <div className="flex items-center gap-3 mb-5 pb-4 border-b border-cyan-500/30">
-          <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-cyan-500 to-purple-500 flex items-center justify-center">
-            <NetworkIcon className="w-5 h-5 text-white" />
-          </div>
-          <div className="text-xl font-bold text-white">DEPENDENCIES</div>
-        </div>
-        <div className="space-y-3">
-          <div className="flex justify-between items-center p-3 bg-gray-900/50 rounded-lg border border-gray-700/50">
-            <span className="text-gray-400 font-medium">NODES</span>
-            <span className="text-xl font-bold text-cyan-400">
-              {stats.totalNodes}
-            </span>
-          </div>
-          <div className="flex justify-between items-center p-3 bg-gray-900/50 rounded-lg border border-gray-700/50">
-            <span className="text-gray-400 font-medium">DEPENDENCIES</span>
-            <span className="text-xl font-bold text-cyan-400">
-              {stats.totalEdges}
-            </span>
-          </div>
-          <div className="flex justify-between items-center p-3 bg-gray-900/50 rounded-lg border border-gray-700/50">
-            <span className="text-gray-400 font-medium">COMPONENTS</span>
-            <span className="text-xl font-bold text-cyan-400">
-              {stats.components}
-            </span>
-          </div>
-        </div>
-        <div className="grid grid-cols-2 gap-2 mt-5 pt-5 border-t border-cyan-500/30">
-          {Object.entries(stats.stateCounts).map(([state, count]) => (
+            {/* HUD */}
             <div
-              key={state}
-              className={`px-3 py-2 rounded-lg text-xs font-semibold text-center cursor-pointer transition-all border ${state === 'healthy' ? 'bg-green-400/10 text-green-400 border-green-400/40' :
-                state === 'unused' ? 'bg-red-400/10 text-red-400 border-red-400/40' :
-                  state === 'external' ? 'bg-cyan-400/10 text-cyan-400 border-cyan-400/40' :
-                    state === 'warning' ? 'bg-yellow-400/10 text-yellow-400 border-yellow-400/40' :
-                      'bg-gray-400/10 text-gray-400 border-gray-400/40'
-                }`}
+                style={{
+                    position: 'absolute',
+                    top: '20px',
+                    left: '20px',
+                    backgroundColor: `${colors.bg_secondary}e6`,
+                    border: `1px solid ${colors.border}`,
+                    borderRadius: '12px',
+                    padding: '16px',
+                    backdropFilter: 'blur(10px)',
+                    minWidth: '280px',
+                }}
             >
-              {state}: {count}
+                <div
+                    style={{
+                        fontSize: '14px',
+                        fontWeight: 600,
+                        color: colors.text_primary,
+                        marginBottom: '12px',
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.5px',
+                    }}
+                >
+                    {title}
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px' }}>
+                    <div
+                        style={{
+                            backgroundColor: `${colors.bg_primary}40`,
+                            padding: '12px',
+                            borderRadius: '8px',
+                            textAlign: 'center',
+                        }}
+                    >
+                        <div style={{ fontSize: '24px', fontWeight: 700, color: colors.accent }}>
+                            {metrics.totalNodes}
+                        </div>
+                        <div style={{ fontSize: '10px', color: colors.text_secondary, textTransform: 'uppercase' }}>
+                            Nodes
+                        </div>
+                    </div>
+                    <div
+                        style={{
+                            backgroundColor: `${colors.bg_primary}40`,
+                            padding: '12px',
+                            borderRadius: '8px',
+                            textAlign: 'center',
+                        }}
+                    >
+                        <div style={{ fontSize: '24px', fontWeight: 700, color: colors.accent }}>
+                            {metrics.totalEdges}
+                        </div>
+                        <div style={{ fontSize: '10px', color: colors.text_secondary, textTransform: 'uppercase' }}>
+                            Links
+                        </div>
+                    </div>
+                    <div
+                        style={{
+                            backgroundColor: `${colors.bg_primary}40`,
+                            padding: '12px',
+                            borderRadius: '8px',
+                            textAlign: 'center',
+                        }}
+                    >
+                        <div style={{ fontSize: '24px', fontWeight: 700, color: colors.accent }}>
+                            {metrics.components}
+                        </div>
+                        <div style={{ fontSize: '10px', color: colors.text_secondary, textTransform: 'uppercase' }}>
+                            Groups
+                        </div>
+                    </div>
+                </div>
             </div>
-          ))}
-        </div>
-      </div>
 
-      {/* Legend */}
-      <div className="absolute top-5 right-5 bg-gray-800/90 backdrop-blur-md border border-gray-700 rounded-xl p-4 min-w-[180px]">
-        <div className="flex items-center gap-2 text-white font-semibold mb-3 text-sm">
-          <LayersIcon className="w-4 h-4" />
-          Resource Types
-        </div>
-        <div className="space-y-2">
-          {Object.entries(nodeConfig).map(([type, config]) => (
-            <div key={type} className="flex items-center gap-2 text-xs text-gray-300">
-              <div
-                className="w-2.5 h-2.5 rounded-full"
-                style={{ backgroundColor: config.color }}
-              />
-              <span className="capitalize">{type}s</span>
+            {/* Legend */}
+            <div
+                style={{
+                    position: 'absolute',
+                    top: '20px',
+                    right: '20px',
+                    backgroundColor: `${colors.bg_secondary}e6`,
+                    border: `1px solid ${colors.border}`,
+                    borderRadius: '12px',
+                    padding: '16px',
+                    backdropFilter: 'blur(10px)',
+                    minWidth: '280px',
+                    maxHeight: 'calc(100% - 40px)',
+                    overflowY: 'auto',
+                }}
+            >
+                <div
+                    style={{
+                        fontSize: '12px',
+                        fontWeight: 600,
+                        color: colors.text_secondary,
+                        marginBottom: '12px',
+                        textTransform: 'uppercase',
+                    }}
+                >
+                    Metrics
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px', marginBottom: '16px' }}>
+                    <div style={{ textAlign: 'center', padding: '8px', backgroundColor: `${colors.bg_primary}20`, borderRadius: '6px' }}>
+                        <div style={{ fontSize: '18px', fontWeight: 700, color: colors.text_primary }}>
+                            {metrics.avgDependencies}
+                        </div>
+                        <div style={{ fontSize: '9px', color: colors.text_secondary }}>Avg Deps</div>
+                    </div>
+                    <div style={{ textAlign: 'center', padding: '8px', backgroundColor: `${colors.bg_primary}20`, borderRadius: '6px' }}>
+                        <div style={{ fontSize: '18px', fontWeight: 700, color: colors.text_primary }}>
+                            {metrics.maxDepth}
+                        </div>
+                        <div style={{ fontSize: '9px', color: colors.text_secondary }}>Max Depth</div>
+                    </div>
+                    <div style={{ textAlign: 'center', padding: '8px', backgroundColor: `${colors.bg_primary}20`, borderRadius: '6px' }}>
+                        <div style={{ fontSize: '18px', fontWeight: 700, color: colors.text_primary }}>
+                            {metrics.complexityScore}
+                        </div>
+                        <div style={{ fontSize: '9px', color: colors.text_secondary }}>Complexity</div>
+                    </div>
+                </div>
+
             </div>
-          ))}
+
+            {/* Controls */}
+            <div
+                style={{
+                    position: 'absolute',
+                    bottom: '20px',
+                    left: '50%',
+                    transform: 'translateX(-50%)',
+                    backgroundColor: `${colors.bg_secondary}e6`,
+                    border: `1px solid ${colors.border}`,
+                    borderRadius: '50px',
+                    padding: '12px 20px',
+                    display: 'flex',
+                    gap: '8px',
+                    backdropFilter: 'blur(10px)',
+                }}
+            >
+                <button
+                    onClick={() => (window as any).graphReset?.()}
+                    style={{
+                        backgroundColor: colors.bg_primary,
+                        border: `1px solid ${colors.border}`,
+                        color: colors.text_primary,
+                        padding: '8px 16px',
+                        borderRadius: '25px',
+                        cursor: 'pointer',
+                        fontSize: '14px',
+                        fontWeight: 500,
+                        transition: 'all 0.2s',
+                    }}
+                    onMouseEnter={e => {
+                        e.currentTarget.style.backgroundColor = colors.accent;
+                        e.currentTarget.style.color = colors.bg_primary;
+                    }}
+                    onMouseLeave={e => {
+                        e.currentTarget.style.backgroundColor = colors.bg_primary;
+                        e.currentTarget.style.color = colors.text_primary;
+                    }}
+                >
+                    Reset
+                </button>
+                <button
+                    onClick={() => setPhysicsEnabled(!physicsEnabled)}
+                    style={{
+                        backgroundColor: colors.bg_primary,
+                        border: `1px solid ${colors.border}`,
+                        color: colors.text_primary,
+                        padding: '8px 16px',
+                        borderRadius: '25px',
+                        cursor: 'pointer',
+                        fontSize: '14px',
+                        fontWeight: 500,
+                        transition: 'all 0.2s',
+                    }}
+                    onMouseEnter={e => {
+                        e.currentTarget.style.backgroundColor = colors.accent;
+                        e.currentTarget.style.color = colors.bg_primary;
+                    }}
+                    onMouseLeave={e => {
+                        e.currentTarget.style.backgroundColor = colors.bg_primary;
+                        e.currentTarget.style.color = colors.text_primary;
+                    }}
+                >
+                    {physicsEnabled ? 'Physics On' : 'Physics Off'}
+                </button>
+                <button
+                    onClick={() => (window as any).graphCenter?.()}
+                    style={{
+                        backgroundColor: colors.bg_primary,
+                        border: `1px solid ${colors.border}`,
+                        color: colors.text_primary,
+                        padding: '8px 16px',
+                        borderRadius: '25px',
+                        cursor: 'pointer',
+                        fontSize: '14px',
+                        fontWeight: 500,
+                        transition: 'all 0.2s',
+                    }}
+                    onMouseEnter={e => {
+                        e.currentTarget.style.backgroundColor = colors.accent;
+                        e.currentTarget.style.color = colors.bg_primary;
+                    }}
+                    onMouseLeave={e => {
+                        e.currentTarget.style.backgroundColor = colors.bg_primary;
+                        e.currentTarget.style.color = colors.text_primary;
+                    }}
+                >
+                    Center
+                </button>
+                <button
+                    onClick={handleClearHighlight}
+                    style={{
+                        backgroundColor: colors.bg_primary,
+                        border: `1px solid ${colors.border}`,
+                        color: colors.text_primary,
+                        padding: '8px 16px',
+                        borderRadius: '25px',
+                        cursor: 'pointer',
+                        fontSize: '14px',
+                        fontWeight: 500,
+                        transition: 'all 0.2s',
+                    }}
+                    onMouseEnter={e => {
+                        e.currentTarget.style.backgroundColor = colors.accent;
+                        e.currentTarget.style.color = colors.bg_primary;
+                    }}
+                    onMouseLeave={e => {
+                        e.currentTarget.style.backgroundColor = colors.bg_primary;
+                        e.currentTarget.style.color = colors.text_primary;
+                    }}
+                >
+                    Clear
+                </button>
+            </div>
+
+            {/* Zoom Controls */}
+            <div
+                style={{
+                    position: 'absolute',
+                    bottom: '20px',
+                    right: '20px',
+                    backgroundColor: `${colors.bg_secondary}e6`,
+                    border: `1px solid ${colors.border}`,
+                    borderRadius: '12px',
+                    padding: '12px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '8px',
+                    backdropFilter: 'blur(10px)',
+                }}
+            >
+                <button
+                    onClick={() => (window as any).graphZoomIn?.()}
+                    style={{
+                        backgroundColor: colors.bg_primary,
+                        border: `1px solid ${colors.border}`,
+                        color: colors.text_primary,
+                        width: '36px',
+                        height: '36px',
+                        borderRadius: '8px',
+                        cursor: 'pointer',
+                        fontSize: '18px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        transition: 'all 0.2s',
+                    }}
+                    onMouseEnter={e => {
+                        e.currentTarget.style.backgroundColor = colors.accent;
+                        e.currentTarget.style.color = colors.bg_primary;
+                    }}
+                    onMouseLeave={e => {
+                        e.currentTarget.style.backgroundColor = colors.bg_primary;
+                        e.currentTarget.style.color = colors.text_primary;
+                    }}
+                >
+                    +
+                </button>
+                <button
+                    onClick={() => (window as any).graphZoomOut?.()}
+                    style={{
+                        backgroundColor: colors.bg_primary,
+                        border: `1px solid ${colors.border}`,
+                        color: colors.text_primary,
+                        width: '36px',
+                        height: '36px',
+                        borderRadius: '8px',
+                        cursor: 'pointer',
+                        fontSize: '18px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        transition: 'all 0.2s',
+                    }}
+                    onMouseEnter={e => {
+                        e.currentTarget.style.backgroundColor = colors.accent;
+                        e.currentTarget.style.color = colors.bg_primary;
+                    }}
+                    onMouseLeave={e => {
+                        e.currentTarget.style.backgroundColor = colors.bg_primary;
+                        e.currentTarget.style.color = colors.text_primary;
+                    }}
+                >
+                    −
+                </button>
+            </div>
+
+            {/* Tooltip */}
+            {hoveredNode && (
+                <div
+                    style={{
+                        position: 'absolute',
+                        left: `${tooltipPos.x + 15}px`,
+                        top: `${tooltipPos.y + 15}px`,
+                        backgroundColor: `${colors.bg_secondary}f0`,
+                        border: `1px solid ${colors.accent}60`,
+                        borderRadius: '12px',
+                        padding: '16px',
+                        backdropFilter: 'blur(12px)',
+                        boxShadow: `0 8px 40px rgba(0,0,0,0.3), inset 0 1px 0 ${colors.accent}15`,
+                        maxWidth: '320px',
+                        pointerEvents: 'none',
+                        zIndex: 1001,
+                        color: colors.text_primary,
+                        fontSize: '13px',
+                        animation: 'fadeIn 0.3s ease',
+                    }}
+                >
+                    <div
+                        style={{
+                            fontWeight: 700,
+                            color: colors.accent,
+                            marginBottom: '8px',
+                            fontSize: '15px',
+                            borderBottom: `1px solid ${colors.accent}30`,
+                            paddingBottom: '6px',
+                        }}
+                    >
+                        {hoveredNode.label}
+                    </div>
+
+                    {hoveredNode.state && (
+                        <div
+                            style={{
+                                fontSize: '11px',
+                                padding: '4px 8px',
+                                borderRadius: '6px',
+                                marginTop: '8px',
+                                display: 'inline-block',
+                                fontWeight: 600,
+                                border: `1px solid ${STATE_CONFIG[hoveredNode.state]?.stroke || '#666'}40`,
+                                background: `${STATE_CONFIG[hoveredNode.state]?.stroke || '#666'}15`,
+                                color: STATE_CONFIG[hoveredNode.state]?.stroke || '#666',
+                            }}
+                        >
+                            {hoveredNode.state.replace('_', ' ').toUpperCase()}
+                        </div>
+                    )}
+
+                    <div style={{ marginTop: '12px', paddingTop: '12px', borderTop: `1px solid ${colors.border}40` }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
+                            <span style={{ color: colors.text_secondary }}>Type:</span>
+                            <span style={{ fontWeight: 600 }}>{hoveredNode.type}</span>
+                        </div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
+                            <span style={{ color: colors.text_secondary }}>Incoming:</span>
+                            <span
+                                style={{
+                                    fontWeight: 600,
+                                    color: colors.success,
+                                    backgroundColor: `${colors.success}20`,
+                                    padding: '2px 6px',
+                                    borderRadius: '10px',
+                                    fontSize: '11px',
+                                }}
+                            >
+                {hoveredNode.dependencies_in || 0}
+              </span>
+                        </div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                            <span style={{ color: colors.text_secondary }}>Outgoing:</span>
+                            <span
+                                style={{
+                                    fontWeight: 600,
+                                    color: colors.warning,
+                                    backgroundColor: `${colors.warning}20`,
+                                    padding: '2px 6px',
+                                    borderRadius: '10px',
+                                    fontSize: '11px',
+                                }}
+                            >
+                {hoveredNode.dependencies_out || 0}
+              </span>
+                        </div>
+                    </div>
+
+                    {hoveredNode.details && Object.keys(hoveredNode.details).length > 0 && (
+                        <div style={{ marginTop: '12px', paddingTop: '12px', borderTop: `1px solid ${colors.border}40` }}>
+                            <div style={{ fontSize: '11px', color: colors.text_secondary, marginBottom: '6px', fontWeight: 600 }}>
+                                DETAILS
+                            </div>
+                            {Object.entries(hoveredNode.details).slice(0, 3).map(([key, value]) => (
+                                <div key={key} style={{ fontSize: '11px', marginBottom: '2px' }}>
+                                    <span style={{ color: colors.text_secondary }}>{key}:</span>{' '}
+                                    <span style={{ color: colors.text_primary }}>{String(value)}</span>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </div>
+            )}
         </div>
-      </div>
+    );
+};
 
-      {/* Controls */}
-      <div className="absolute bottom-5 left-1/2 transform -translate-x-1/2 bg-gray-800/90 backdrop-blur-md border border-gray-700 rounded-xl px-5 py-3 flex gap-2">
-        <button
-          onClick={() => (window as any).graphResetZoom?.()}
-          className="px-4 py-2 bg-gray-900 border border-gray-700 text-white rounded-lg hover:bg-cyan-500 hover:border-cyan-500 transition-all text-sm font-medium flex items-center gap-2"
-        >
-          <CrosshairIcon className="w-4 h-4" />
-          Reset
-        </button>
-        <button
-          onClick={togglePhysics}
-          className="px-4 py-2 bg-gray-900 border border-gray-700 text-white rounded-lg hover:bg-cyan-500 hover:border-cyan-500 transition-all text-sm font-medium flex items-center gap-2"
-        >
-          {physicsEnabled ? <ZapIcon className="w-4 h-4" /> : <ZapIcon className="w-4 h-4 opacity-50" />}
-          Physics
-        </button>
-        <button
-          onClick={() => (window as any).graphCenter?.()}
-          className="px-4 py-2 bg-gray-900 border border-gray-700 text-white rounded-lg hover:bg-cyan-500 hover:border-cyan-500 transition-all text-sm font-medium flex items-center gap-2"
-        >
-          <TargetIcon className="w-4 h-4" />
-          Center
-        </button>
-        <button
-          onClick={() => setAnimationsEnabled(!animationsEnabled)}
-          className="px-4 py-2 bg-gray-900 border border-gray-700 text-white rounded-lg hover:bg-cyan-500 hover:border-cyan-500 transition-all text-sm font-medium flex items-center gap-2"
-        >
-          <SparklesIcon className="w-4 h-4" />
-          Animations
-        </button>
-      </div>
+export default GraphDemo;
 
-      {/* Scale Controls */}
-      <div className="absolute bottom-5 right-5 bg-gray-800/90 backdrop-blur-md border border-gray-700 rounded-xl p-3 flex flex-col gap-2">
-        <button
-          onClick={() => (window as any).graphZoomIn?.()}
-          className="w-9 h-9 bg-gray-900 border border-gray-700 text-white rounded-lg hover:bg-cyan-500 hover:border-cyan-500 transition-all flex items-center justify-center"
-        >
-          <ZoomInIcon className="w-5 h-5" />
-        </button>
-        <button
-          onClick={() => (window as any).graphZoomOut?.()}
-          className="w-9 h-9 bg-gray-900 border border-gray-700 text-white rounded-lg hover:bg-cyan-500 hover:border-cyan-500 transition-all flex items-center justify-center"
-        >
-          <ZoomOutIcon className="w-5 h-5" />
-        </button>
-        <button
-          onClick={() => (window as any).graphResetZoom?.()}
-          className="w-9 h-9 bg-gray-900 border border-gray-700 text-white rounded-lg hover:bg-cyan-500 hover:border-cyan-500 transition-all flex items-center justify-center"
-        >
-          <MaximizeIcon className="w-5 h-5" />
-        </button>
-      </div>
+// ============================================================================
+// USAGE EXAMPLE
+// ============================================================================
+
+/*
+import GraphEmbed from './GraphEmbed';
+
+function App() {
+  return (
+    <div style={{ padding: '20px' }}>
+      <GraphEmbed />
     </div>
   );
 }
+
+// That's it! The component comes with built-in sample data showing:
+// - 18 nodes (resources, modules, variables, outputs, data sources, providers)
+// - Various states (active, unused, orphaned, external_data, integrated, configuration)
+// - Realistic dependency relationships
+// - Complete with file locations and metadata
+
+// The graph is fully interactive:
+// - Hover nodes to see detailed tooltips
+// - Click nodes to highlight connections
+// - Use mouse wheel to zoom (without scrolling the page!)
+// - Drag nodes to rearrange
+// - Toggle physics simulation on/off
+// - Analyze critical paths, central nodes, and isolated nodes
+// - All within a beautiful dark theme
+*/

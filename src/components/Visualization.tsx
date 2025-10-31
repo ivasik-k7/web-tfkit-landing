@@ -4,7 +4,7 @@ import { motion } from 'framer-motion';
 import { LayoutGridIcon, NetworkIcon, BarChart3Icon } from 'lucide-react';
 import { ClassicLayoutDemo } from './ClassicLayoutDemo.tsx';
 import { DashboardDemo } from './DashboardDemo.tsx';
-import { GraphDemo } from './GraphDemo.tsx';
+import GraphDemo from './GraphDemo.tsx';
 
 const visualizations = [{
   id: 'graph',
