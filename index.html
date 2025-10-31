@@ -23,7 +23,7 @@
       content="terraform, infrastructure as code, security scanning, visualization, validation, dependency tracking, CI/CD, infrastructure analysis, cloud infrastructure, hashicorp, devops"
     />
     <meta name="author" content="ivasik-k7" />
-    <meta name="version" content="0.4.43" />
+    <meta name="version" content="0.4.44" />
     <meta name="robots" content="index, follow, max-image-preview:large" />
 
     <!-- Open Graph / Facebook -->
@@ -280,36 +280,68 @@
 
       /* Enhanced spinner */
       .advanced-spinner {
-        width: 50px;
-        height: 50px;
-        border: 3px solid transparent;
-        border-top: 3px solid #7c3aed;
-        border-right: 3px solid #2563eb;
-        border-bottom: 3px solid #06b6d4;
-        border-radius: 50%;
-        animation: spin 1.5s linear infinite, colors 3s ease-in-out infinite;
-        margin: 0 auto 2rem;
-        opacity: 0;
-        animation: fadeIn 0.8s ease 0.9s forwards, spin 1.5s linear infinite,
-          colors 3s ease-in-out infinite;
+        width: 120px;
+        height: 120px;
+        margin: 0 auto 40px;
+        position: relative;
       }
 
-      @keyframes colors {
-        0%,
+      .spinner-ring {
+        position: absolute;
+        width: 100%;
+        height: 100%;
+        border-radius: 50%;
+        border: 3px solid transparent;
+      }
+
+      .ring-1 {
+        border-top: 3px solid #06b6d4;
+        animation: spin 2s linear infinite;
+      }
+
+      .ring-2 {
+        border-right: 3px solid #8b5cf6;
+        animation: spin 1.5s linear infinite reverse;
+      }
+
+      .ring-3 {
+        border-bottom: 3px solid #10b981;
+        animation: spin 1s linear infinite;
+        width: 80px;
+        height: 80px;
+        top: 10px;
+        left: 10px;
+      }
+
+      .spinner-core {
+        position: absolute;
+        width: 40px;
+        height: 40px;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background: linear-gradient(45deg, #06b6d4, #8b5cf6);
+        border-radius: 50%;
+        animation: pulse 2s ease-in-out infinite alternate;
+      }
+
+      @keyframes spin {
+        0% {
+          transform: rotate(0deg);
+        }
         100% {
-          border-top-color: #7c3aed;
-          border-right-color: #2563eb;
-          border-bottom-color: #06b6d4;
+          transform: rotate(360deg);
         }
-        33% {
-          border-top-color: #2563eb;
-          border-right-color: #06b6d4;
-          border-bottom-color: #7c3aed;
+      }
+
+      @keyframes pulse {
+        0% {
+          transform: translate(-50%, -50%) scale(1);
+          box-shadow: 0 0 20px rgba(6, 182, 212, 0.5);
         }
-        66% {
-          border-top-color: #06b6d4;
-          border-right-color: #7c3aed;
-          border-bottom-color: #2563eb;
+        100% {
+          transform: translate(-50%, -50%) scale(1.1);
+          box-shadow: 0 0 40px rgba(139, 92, 246, 0.8);
         }
       }
 
@@ -355,6 +387,35 @@
         animation: textPulse 2s ease-in-out infinite;
       }
 
+      .progress-container {
+        width: 300px;
+        height: 4px;
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 2px;
+        margin: 20px auto;
+        overflow: hidden;
+      }
+
+      .progress-bar {
+        height: 100%;
+        background: linear-gradient(90deg, #06b6d4, #8b5cf6);
+        border-radius: 2px;
+        width: 0%;
+        animation: progressLoad 4s ease-in-out infinite;
+      }
+
+      @keyframes progressLoad {
+        0% {
+          width: 0%;
+        }
+        50% {
+          width: 70%;
+        }
+        100% {
+          width: 100%;
+        }
+      }
+
       @keyframes textPulse {
         0%,
         100% {
@@ -396,14 +457,21 @@
 
       <!-- Content -->
       <div class="loading-content">
-        <div class="advanced-spinner"></div>
-        <h1 class="logo-text">TFKit</h1>
+        <div class="advanced-spinner">
+          <div class="spinner-ring ring-1"></div>
+          <div class="spinner-ring ring-2"></div>
+          <div class="spinner-ring ring-3"></div>
+          <div class="spinner-core"></div>
+        </div>
         <h2 class="subtitle">Terraform Intelligence & Analysis Suite</h2>
         <p class="description">
           Comprehensive toolkit for analyzing, visualizing, and validating
           Terraform infrastructure code with advanced dependency tracking,
           security scanning, and interactive visualizations
         </p>
+        <div class="progress-container">
+          <div class="progress-bar"></div>
+        </div>
         <div class="status-text pulse" id="loading-status">
           Initializing application...
         </div>

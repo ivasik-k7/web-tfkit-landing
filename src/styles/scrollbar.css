@@ -1,0 +1,281 @@
+/* Hide default scrollbar */
+html::-webkit-scrollbar,
+body::-webkit-scrollbar {
+  display: none;
+  width: 0;
+  height: 0;
+  background: transparent;
+}
+
+html,
+body {
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE and Edge */
+}
+
+/* Main scrollbar container - FIXED POSITION OVERLAY */
+.scrollbar-overlay {
+  position: fixed;
+  top: 0;
+  right: 0;
+  width: var(--scrollbar-width);
+  height: 100vh;
+  pointer-events: none;
+  z-index: 10000;
+  background: transparent;
+}
+
+/* Scrollbar track - completely transparent overlay */
+.scrollbar-track {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 100%;
+  height: 100%;
+  background: transparent;
+  pointer-events: none;
+}
+
+/* Modern tech-inspired scrollbar thumb */
+.scrollbar-thumb {
+  position: absolute;
+  right: 2px;
+  width: calc(100% - 4px);
+  min-height: 80px;
+  background: var(--scrollbar-thumb-gradient);
+  border-radius: var(--scrollbar-border-radius);
+  cursor: pointer;
+  pointer-events: all;
+  transition: var(--scrollbar-transition);
+  opacity: 0.8;
+
+  /* Tech pattern effects */
+  background-size: 200% 200%;
+  animation: gradientFlow 4s ease infinite;
+  box-shadow: var(--scrollbar-glow);
+
+  /* Grid pattern overlay */
+  background-image: linear-gradient(
+      90deg,
+      transparent 95%,
+      var(--grid-color) 95%
+    ),
+    linear-gradient(var(--grid-color) 1px, transparent 1px);
+  background-size: 20px 20px, 100% 20px;
+
+  /* Scan line effect */
+  overflow: hidden;
+}
+
+.scrollbar-thumb::before {
+  content: "";
+  position: absolute;
+  top: -100%;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    to bottom,
+    transparent 0%,
+    rgba(255, 255, 255, 0.1) 50%,
+    transparent 100%
+  );
+  animation: scanline 3s linear infinite;
+  pointer-events: none;
+}
+
+/* Hover effects */
+.scrollbar-thumb:hover {
+  opacity: 1;
+  width: calc(100% - 2px);
+  right: 1px;
+  box-shadow: var(--scrollbar-glow-hover);
+  background: var(--scrollbar-thumb-hover);
+  transform: scaleX(1.05);
+}
+
+/* Active state */
+.scrollbar-thumb:active {
+  background: var(--scrollbar-thumb-gradient);
+  opacity: 0.9;
+}
+
+/* Progress indicator with tech design */
+.scroll-progress-bar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 4px;
+  background: var(--gradient-progress);
+  transform: scaleX(0);
+  transform-origin: left;
+  z-index: 10001;
+  transition: transform 0.1s ease;
+  pointer-events: none;
+
+  /* Tech effects */
+  box-shadow: var(--shadow-glow), 0 0 40px rgba(139, 92, 246, 0.4);
+
+  /* Scan line on progress */
+  overflow: hidden;
+}
+
+.scroll-progress-bar::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.3) 50%,
+    transparent 100%
+  );
+  animation: progressScan 2s ease-in-out infinite;
+}
+
+/* Ensure content doesn't get affected */
+.app-content {
+  width: 100vw;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* Animations */
+@keyframes gradientFlow {
+  0%,
+  100% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+}
+
+@keyframes scanline {
+  0% {
+    top: -100%;
+  }
+  100% {
+    top: 100%;
+  }
+}
+
+@keyframes progressScan {
+  0% {
+    left: -100%;
+  }
+  100% {
+    left: 100%;
+  }
+}
+
+/* Pulse animation for attention */
+@keyframes pulseGlow {
+  0%,
+  100% {
+    box-shadow: var(--scrollbar-glow);
+  }
+  50% {
+    box-shadow: var(--scrollbar-glow-hover);
+  }
+}
+
+.scrollbar-thumb.pulse {
+  animation: gradientFlow 4s ease infinite, pulseGlow 2s ease-in-out infinite;
+}
+
+/* Variants */
+.scrollbar-thin .scrollbar-overlay {
+  width: 8px;
+}
+
+.scrollbar-thin .scrollbar-thumb {
+  right: 1px;
+  width: calc(100% - 2px);
+}
+
+.scrollbar-hidden .scrollbar-overlay {
+  display: none;
+}
+
+/* Glass morphism variant */
+.scrollbar-glass .scrollbar-thumb {
+  background: rgba(6, 182, 212, 0.3);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 8px 32px rgba(6, 182, 212, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+}
+
+/* Matrix variant */
+.scrollbar-matrix .scrollbar-thumb {
+  background: linear-gradient(
+    135deg,
+    #00ff00 0%,
+    #00cc00 25%,
+    #009900 50%,
+    #006600 75%,
+    #003300 100%
+  );
+  box-shadow: 0 0 20px #00ff00;
+}
+
+.scrollbar-matrix .scrollbar-thumb::before {
+  background: linear-gradient(
+    to bottom,
+    transparent 0%,
+    rgba(0, 255, 0, 0.3) 50%,
+    transparent 100%
+  );
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .scrollbar-overlay {
+    width: 10px;
+  }
+
+  .scrollbar-thumb {
+    right: 1px;
+    width: calc(100% - 2px);
+  }
+}
+
+/* High performance optimizations */
+.scrollbar-thumb {
+  will-change: transform, opacity;
+  backface-visibility: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  .scrollbar-thumb,
+  .scroll-progress-bar,
+  .scrollbar-thumb::before,
+  .scroll-progress-bar::after {
+    animation: none;
+    transition: none;
+  }
+}
+
+/* JavaScript integration classes */
+.scrollbar-initialized {
+  overflow: hidden;
+}
+
+.scrollbar-content {
+  width: 100%;
+  height: 100%;
+  overflow-y: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.scrollbar-content::-webkit-scrollbar {
+  display: none;
+}

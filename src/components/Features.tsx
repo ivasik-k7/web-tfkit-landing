@@ -1,84 +1,262 @@
-import React from 'react';
-import { motion } from 'framer-motion';
-import { ZapIcon, ShieldCheckIcon, FileTextIcon, BarChart3Icon, GitBranchIcon, NetworkIcon } from 'lucide-react';
-const features = [{
-  icon: ZapIcon,
-  title: 'Quick Scanning',
-  description: 'Rapid project analysis with comprehensive metrics, health assessment, and resource statistics'
-}, {
-  icon: ShieldCheckIcon,
-  title: 'Validation Suite',
-  description: 'Built-in validation with syntax, reference, security, and best practice checks for comprehensive quality assurance'
-}, {
-  icon: FileTextIcon,
-  title: 'Multi-Format Export',
-  description: 'Flexible output in JSON, YAML, CSV, XML, and TOML formats for seamless integration with other tools'
-}, {
-  icon: BarChart3Icon,
-  title: 'Interactive Visualizations',
-  description: 'Rich graphical representations with multiple themes and layouts including Graph, Dashboard, and Classic views'
-}, {
-  icon: GitBranchIcon,
-  title: 'CI/CD Ready',
-  description: 'SARIF output format and automation-friendly interfaces with fail-on-warning capabilities'
-}, {
-  icon: NetworkIcon,
-  title: 'Dependency Tracking',
-  description: 'Deep insights into resource relationships, dependencies, and infrastructure component connections'
-}];
-export function Features() {
-  return <div className="w-full py-24 px-6 bg-gradient-to-b from-black to-gray-900">
-      <div className="max-w-7xl mx-auto">
-        <motion.div initial={{
-        opacity: 0,
-        y: 20
-      }} whileInView={{
-        opacity: 1,
-        y: 0
-      }} transition={{
-        duration: 0.6
-      }} viewport={{
-        once: true
-      }} className="text-center mb-16">
-          <h2 className="text-5xl md:text-6xl font-bold mb-4">
-            <span className="bg-gradient-to-r from-cyan-400 to-purple-400 bg-clip-text text-transparent">
-              Powerful Features
-            </span>
-          </h2>
-          <p className="text-xl text-gray-400">
-            Everything you need to understand, validate, and optimize your
-            Terraform infrastructure
+import { motion, useMotionValue, useSpring, useTransform } from 'framer-motion';
+import { useRef, type MouseEvent } from 'react';
+import {
+  ZapIcon,
+  ShieldCheckIcon,
+  FileTextIcon,
+  BarChart3Icon,
+  GitBranchIcon,
+  NetworkIcon,
+  SparklesIcon,
+  ArrowRightIcon,
+  type LucideIcon,
+  SearchIcon
+} from 'lucide-react';
+
+interface Feature {
+  icon: LucideIcon;
+  title: string;
+  description: string;
+  gradient: string;
+  command: string;
+  useCase: string;
+}
+
+interface FeatureCardProps {
+  feature: Feature;
+  index: number;
+}
+
+const features: Feature[] = [
+  {
+    icon: ZapIcon,
+    title: 'Quick Scan',
+    description: 'Get instant insights into your Terraform project - resources, health score, and potential issues in seconds',
+    gradient: 'from-yellow-400 to-orange-500',
+    command: 'tfkit scan --open',
+    useCase: 'Project overview'
+  },
+  {
+    icon: SearchIcon,
+    title: 'Validate Configs',
+    description: 'Check syntax, find unused variables, security issues, and best practice violations before deployment',
+    gradient: 'from-green-400 to-emerald-600',
+    command: 'tfkit validate --all',
+    useCase: 'Pre-commit checks'
+  },
+  {
+    icon: FileTextIcon,
+    title: 'Export Data',
+    description: 'Get your analysis in JSON, YAML, CSV - perfect for docs, dashboards, or CI/CD pipelines',
+    gradient: 'from-blue-400 to-cyan-500',
+    command: 'tfkit export --format json',
+    useCase: 'Tool integration'
+  },
+  {
+    icon: BarChart3Icon,
+    title: 'Visualize',
+    description: 'See your infrastructure as interactive graphs with 10+ themes. No more guessing about dependencies',
+    gradient: 'from-purple-400 to-pink-500',
+    command: 'tfkit scan --theme dark --layout graph',
+    useCase: 'Architecture review'
+  },
+  {
+    icon: GitBranchIcon,
+    title: 'CI/CD Ready',
+    description: 'SARIF output, fail-fast mode, and quiet options that actually work in automation',
+    gradient: 'from-indigo-400 to-violet-600',
+    command: 'tfkit validate --format sarif',
+    useCase: 'Pipeline integration'
+  },
+  {
+    icon: NetworkIcon,
+    title: 'Dependency Map',
+    description: 'Understand how everything connects with clear dependency tracking and relationship mapping',
+    gradient: 'from-rose-400 to-red-500',
+    command: 'tfkit scan --layout graph',
+    useCase: 'Impact analysis'
+  }
+];
+
+function FeatureCard({ feature, index }: FeatureCardProps) {
+  const ref = useRef<HTMLDivElement>(null);
+  const x = useMotionValue(0);
+  const y = useMotionValue(0);
+
+  const mouseXSpring = useSpring(x);
+  const mouseYSpring = useSpring(y);
+
+  const rotateX = useTransform(mouseYSpring, [-0.5, 0.5], ["17.5deg", "-17.5deg"]);
+  const rotateY = useTransform(mouseXSpring, [-0.5, 0.5], ["-17.5deg", "17.5deg"]);
+
+  const handleMouseMove = (e: MouseEvent) => {
+    if (!ref.current) return;
+
+    const rect = ref.current.getBoundingClientRect();
+
+    const width = rect.width;
+    const height = rect.height;
+
+    const mouseX = e.clientX - rect.left;
+    const mouseY = e.clientY - rect.top;
+
+    const xPct = mouseX / width - 0.5;
+    const yPct = mouseY / height - 0.5;
+
+    x.set(xPct);
+    y.set(yPct);
+  };
+
+  const handleMouseLeave = () => {
+    x.set(0);
+    y.set(0);
+  };
+
+  return (
+    <motion.div
+      ref={ref}
+      initial={{ opacity: 0, y: 60, scale: 0.9 }}
+      whileInView={{ opacity: 1, y: 0, scale: 1 }}
+      transition={{
+        duration: 0.8,
+        delay: index * 0.15,
+        type: "spring",
+        stiffness: 100
+      }}
+      viewport={{ once: true, margin: "-50px" }}
+      className="feature-card-container"
+      onMouseMove={handleMouseMove}
+      onMouseLeave={handleMouseLeave}
+      style={{
+        rotateX,
+        rotateY,
+        transformStyle: "preserve-3d",
+      }}
+    >
+      <div className="feature-card-glow" />
+
+      <div className="feature-card">
+        {/* Animated background elements */}
+        <div className="feature-card-bg-pattern" />
+        <div className="feature-card-gradient" />
+
+        {/* Header with icon and badge */}
+        <div className="feature-header">
+          <motion.div
+            className="feature-icon-wrapper"
+            whileHover={{ scale: 1.1, rotate: 5 }}
+            transition={{ type: "spring", stiffness: 300 }}
+          >
+            <div className="feature-icon-bg">
+              <SparklesIcon className="feature-sparkle" />
+            </div>
+            <feature.icon className="feature-icon" />
+          </motion.div>
+
+          {/* <div className="feature-badge">
+            <span>{feature.capability}</span>
+          </div> */}
+        </div>
+
+        {/* Content */}
+        <div className="feature-content">
+          <h3 className="feature-title">
+            {feature.title}
+          </h3>
+
+          <p className="feature-description">
+            {feature.description}
           </p>
+
+          {/* <div className="feature-stats">
+            <div className="stat-pill">
+              {feature.stats}
+            </div>
+          </div> */}
+        </div>
+
+        {/* Animated CTA */}
+        <motion.div
+          className="feature-cta"
+          whileHover={{ x: 5 }}
+          transition={{ type: "spring", stiffness: 400 }}
+        >
+          <span>Explore feature</span>
+          <ArrowRightIcon className="cta-arrow" />
         </motion.div>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {features.map((feature, index) => <motion.div key={index} initial={{
-          opacity: 0,
-          y: 20
-        }} whileInView={{
-          opacity: 1,
-          y: 0
-        }} transition={{
-          duration: 0.6,
-          delay: index * 0.1
-        }} viewport={{
-          once: true
-        }} className="group">
-              <div className="relative p-8 rounded-2xl border border-cyan-500/20 bg-gradient-to-br from-gray-900/50 to-gray-800/50 backdrop-blur-sm hover:border-cyan-500/50 transition-all duration-300 h-full">
-                <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/0 to-purple-500/0 group-hover:from-cyan-500/10 group-hover:to-purple-500/10 rounded-2xl transition-all duration-300" />
-                <div className="relative">
-                  <div className="w-14 h-14 mb-6 rounded-xl bg-gradient-to-br from-cyan-500/20 to-purple-500/20 flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
-                    <feature.icon className="w-7 h-7 text-cyan-400" />
-                  </div>
-                  <h3 className="text-xl font-bold mb-3 text-white">
-                    {feature.title}
-                  </h3>
-                  <p className="text-gray-400 leading-relaxed">
-                    {feature.description}
-                  </p>
-                </div>
-              </div>
-            </motion.div>)}
+
+        {/* Particle effects */}
+        <div className="feature-particles">
+          {[...Array(3)].map((_, i) => (
+            <motion.div
+              key={i}
+              className="particle"
+              animate={{
+                y: [0, -20, 0],
+                opacity: [0, 1, 0],
+              }}
+              transition={{
+                duration: 2,
+                delay: i * 0.3,
+                repeat: Infinity,
+                repeatType: "loop",
+              }}
+            />
+          ))}
         </div>
       </div>
-    </div>;
+    </motion.div>
+  );
+}
+
+export function Features() {
+  return (
+    <div className="features-section-premium">
+      <div className="premium-bg">
+        {/* <div className="floating-orb orb-1" />
+        <div className="floating-orb orb-2" />
+        <div className="floating-orb orb-3" /> */}
+        <div className="animated-grid" />
+        <div className="scanlines" />
+      </div>
+
+      <div className="features-container-premium">
+        <motion.div
+          initial={{ opacity: 0, y: 40 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          transition={{ duration: 1, type: "spring" }}
+          viewport={{ once: true }}
+          className="premium-header"
+        >
+          <h2 className="premium-title">
+            <span className="title-gradient">Terraform</span>
+            <span className="title-main"> Intelligence Suite</span>
+          </h2>
+
+          <motion.p
+            className="premium-subtitle"
+            initial={{ opacity: 0 }}
+            whileInView={{ opacity: 1 }}
+            transition={{ delay: 0.3, duration: 0.8 }}
+            viewport={{ once: true }}
+          >
+            Unlock deep insights into your Terraform environments with advanced analytics,
+            automated validation, and rich visual intelligence. Export, integrate, and optimize
+            effortlessly — across macOS, Linux, and Windows.
+          </motion.p>
+        </motion.div>
+
+        {/* Enhanced Features Grid */}
+        <div className="premium-features-grid">
+          {features.map((feature, index) => (
+            <FeatureCard
+              key={feature.title}
+              feature={feature}
+              index={index}
+            />
+          ))}
+        </div>
+      </div>
+    </div>
+  );
 }

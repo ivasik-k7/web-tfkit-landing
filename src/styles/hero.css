@@ -1,0 +1,265 @@
+.hero-container {
+  position: relative;
+  width: 100%;
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  background: linear-gradient(135deg, #000000 0%, #0f172a 50%, #1e293b 100%);
+}
+
+.hero-bg-grid {
+  position: absolute;
+  inset: 0;
+  background-image: linear-gradient(
+      rgba(124, 58, 237, 0.1) 1px,
+      transparent 1px
+    ),
+    linear-gradient(90deg, rgba(124, 58, 237, 0.1) 1px, transparent 1px);
+  background-size: 50px 50px;
+  animation: gridMove 20s linear infinite;
+}
+
+@keyframes gridMove {
+  0% {
+    transform: translate(0, 0);
+  }
+  100% {
+    transform: translate(50px, 50px);
+  }
+}
+
+/* Glowing orbs matching loading screen */
+.hero-glow {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(80px);
+  opacity: 0.3;
+  animation: pulse 4s ease-in-out infinite;
+}
+
+.hero-glow-cyan {
+  top: 20%;
+  left: 10%;
+  width: 400px;
+  height: 400px;
+  background: #7c3aed;
+  animation-delay: 0s;
+}
+
+.hero-glow-purple {
+  bottom: 20%;
+  right: 10%;
+  width: 500px;
+  height: 500px;
+  background: #2563eb;
+  animation-delay: 2s;
+}
+
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 0.2;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.4;
+    transform: scale(1.1);
+  }
+}
+
+.hero-content {
+  position: relative;
+  z-index: 10;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 2rem;
+  text-align: center;
+}
+
+/* Title styling matching loading screen logo */
+.hero-title {
+  font-size: clamp(4rem, 10vw, 7rem);
+  font-weight: 800;
+  margin-bottom: 1rem;
+  background: linear-gradient(135deg, #7c3aed 0%, #2563eb 50%, #06b6d4 100%);
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-size: 200% 200%;
+  animation: gradientShift 3s ease infinite;
+}
+
+@keyframes gradientShift {
+  0%,
+  100% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+}
+
+/* Subtitle matching loading screen */
+.hero-subtitle {
+  font-size: clamp(1.25rem, 3vw, 1.75rem);
+  font-weight: 300;
+  color: #cbd5e1;
+  margin-bottom: 2rem;
+  opacity: 0;
+  animation: fadeInUp 0.8s ease 0.3s forwards;
+}
+
+/* Description matching loading screen */
+.hero-description {
+  font-size: clamp(0.9rem, 2vw, 1.1rem);
+  color: #94a3b8;
+  margin-bottom: 3rem;
+  max-width: 500px;
+  margin-left: auto;
+  margin-right: auto;
+  line-height: 1.6;
+  opacity: 0;
+  animation: fadeInUp 0.8s ease 0.6s forwards;
+}
+
+.hero-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  justify-content: center;
+  align-items: center;
+  margin-bottom: 4rem;
+  opacity: 0;
+  animation: fadeInUp 0.8s ease 0.9s forwards;
+}
+
+/* Button styling with loading screen colors */
+.hero-button {
+  padding: 1rem 2rem;
+  background: linear-gradient(135deg, #06b6d4 0%, #8b5cf6 100%);
+  border-radius: 0.75rem;
+  font-weight: 600;
+  color: white;
+  border: none;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  transform: scale(1);
+  font-size: 1.125rem;
+  font-family: inherit;
+  opacity: 0;
+  animation: fadeInUp 0.8s ease 1.2s forwards;
+}
+
+.hero-button:hover {
+  box-shadow: 0 0 40px rgba(139, 92, 246, 0.8);
+  transform: scale(1.05);
+}
+
+/* Install command matching loading screen styling */
+.hero-install-command {
+  display: inline-flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.75rem 1.5rem;
+  border-radius: 0.75rem;
+  background: rgba(15, 23, 42, 0.5);
+  border: 1px solid rgba(6, 182, 212, 0.2);
+  backdrop-filter: blur(8px);
+  opacity: 0;
+  animation: fadeInUp 0.8s ease 1.5s forwards;
+}
+
+.hero-terminal-icon {
+  width: 1.25rem;
+  height: 1.25rem;
+  color: #06b6d4;
+}
+
+.hero-code {
+  color: #06b6d4;
+  font-family: "Monaco", "Consolas", "Courier New", monospace;
+  font-size: 1rem;
+}
+
+.hero-scroll-indicator {
+  position: absolute;
+  bottom: 3rem;
+  left: 50%;
+  transform: translateX(-50%);
+  opacity: 0;
+  animation: fadeIn 0.8s ease 1.8s forwards;
+}
+
+.hero-scroll-icon {
+  width: 2rem;
+  height: 2rem;
+  color: #06b6d4;
+  animation: bounce 2s infinite;
+}
+
+@keyframes bounce {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(10px);
+  }
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .hero-glow-cyan {
+    width: 300px;
+    height: 300px;
+  }
+
+  .hero-glow-purple {
+    width: 400px;
+    height: 400px;
+  }
+}
+
+@media (max-width: 640px) {
+  .hero-actions {
+    flex-direction: column;
+  }
+
+  .hero-glow-cyan {
+    width: 200px;
+    height: 200px;
+  }
+
+  .hero-glow-purple {
+    width: 300px;
+    height: 300px;
+  }
+}
+
+@media (min-width: 640px) {
+  .hero-actions {
+    flex-direction: row;
+  }
+}

@@ -1,9 +1,16 @@
-import {StrictMode} from "react";
-import {createRoot} from "react-dom/client";
-import {App} from "./App";
-import "./index.css";
-import {BrowserRouter} from "react-router-dom";
-import {AppRouter} from "./AppRouter.tsx";   // <-- this is crucial
+import { StrictMode } from "react";
+import { createRoot } from "react-dom/client";
+import { AppRouter } from "./AppRouter.tsx";
+
+import './styles/imports.css';
+import './styles/variables.css'
+import "./styles/scrollbar.css";
+// component related
+import './styles/hero.css';
+import './styles/features.css';
+import './styles/visualization.css'
+import './styles/footer.css'
+
 
 createRoot(document.getElementById('root')!).render(
     <StrictMode>
