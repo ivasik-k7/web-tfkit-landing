@@ -1,7 +1,6 @@
-
 import { useState, useEffect } from 'react';
-import { ChevronLeftIcon, ChevronRightIcon } from 'lucide-react';
-import { ThemeCard } from './ThemeCard.tsx';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { ThemeCard } from './ThemeCard';
 
 interface ThemeColors {
     bg_primary: string;
@@ -167,13 +166,20 @@ export function ThemeCarousel() {
 
     const themeEntries = Object.entries(THEMES);
 
-    // Update items per page based on window size
+    // Update items per page based on window size with 3 breakpoints
     useEffect(() => {
         const handleResize = () => {
-            if (window.innerWidth < 768) {
-                setItemsPerPage(1); // Mobile: 1 card
+            const width = window.innerWidth;
+
+            if (width < 768) {
+                // Mobile: < 768px
+                setItemsPerPage(1);
+            } else if (width < 1280) {
+                // Tablet/Medium: 768px - 1279px
+                setItemsPerPage(2);
             } else {
-                setItemsPerPage(3); // Desktop: 3 cards
+                // Desktop: >= 1280px
+                setItemsPerPage(3);
             }
         };
 
@@ -187,10 +193,13 @@ export function ThemeCarousel() {
         return () => window.removeEventListener('resize', handleResize);
     }, []);
 
-    // Reset index when items per page changes
+    // Adjust current index when items per page changes to prevent out of bounds
     useEffect(() => {
-        setCurrentIndex(0);
-    }, [itemsPerPage]);
+        const maxIndex = Math.max(0, themeEntries.length - itemsPerPage);
+        if (currentIndex > maxIndex) {
+            setCurrentIndex(maxIndex);
+        }
+    }, [itemsPerPage, currentIndex, themeEntries.length]);
 
     const maxIndex = Math.max(0, themeEntries.length - itemsPerPage);
 
@@ -204,34 +213,38 @@ export function ThemeCarousel() {
 
     const visibleThemes = themeEntries.slice(currentIndex, currentIndex + itemsPerPage);
 
+    // Calculate total number of pages for pagination dots
+    const totalPages = maxIndex + 1;
+
     return (
-        <div className="relative">
-            <div className="flex items-center gap-4">
+        <div className="relative w-full">
+            <div className="flex items-center gap-3 md:gap-4">
+                {/* Previous Button */}
                 <button
                     onClick={handlePrev}
                     disabled={currentIndex === 0}
-                    className="flex-shrink-0 w-10 h-10 rounded-full border border-cyan-500/30 bg-gray-800/50 flex items-center justify-center hover:bg-cyan-500/10 hover:border-cyan-500/50 transition-all disabled:opacity-30 disabled:cursor-not-allowed"
+                    className="flex-shrink-0 w-10 h-10 rounded-full border border-cyan-500/30 bg-gray-800/50 backdrop-blur-sm flex items-center justify-center hover:bg-cyan-500/10 hover:border-cyan-500/50 hover:scale-110 active:scale-95 transition-all disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:scale-100"
                     aria-label="Previous themes"
                 >
-                    <ChevronLeftIcon className="w-5 h-5 text-cyan-400" />
+                    <ChevronLeft className="w-5 h-5 text-cyan-400" />
                 </button>
 
+                {/* Carousel Content */}
                 <div className="flex-1 overflow-hidden">
-                    <div
-                        className="flex gap-4 transition-transform duration-500 ease-out"
-                        style={{ transform: `translateX(0)` }}
-                    >
+                    <div className="flex gap-3 md:gap-4 transition-all duration-500 ease-out">
                         {visibleThemes.map(([name, colors]) => (
                             <div
                                 key={name}
-                                className="flex-1 min-w-0"
+                                className="flex-shrink-0 transition-all duration-500"
                                 style={{
-                                    flex: `0 0 ${100 / itemsPerPage}%`,
-                                    maxWidth: `${100 / itemsPerPage}%`
+                                    width: `calc((100% - ${(itemsPerPage - 1) * (window.innerWidth < 768 ? 12 : 16)}px) / ${itemsPerPage})`
                                 }}
                             >
                                 <ThemeCard
-                                    name={name.charAt(0).toUpperCase() + name.slice(1).replace(/-/g, ' ')}
+                                    name={name
+                                        .split('-')
+                                        .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+                                        .join(' ')}
                                     colors={colors}
                                 />
                             </div>
@@ -239,30 +252,39 @@ export function ThemeCarousel() {
                     </div>
                 </div>
 
+                {/* Next Button */}
                 <button
                     onClick={handleNext}
                     disabled={currentIndex >= maxIndex}
-                    className="flex-shrink-0 w-10 h-10 rounded-full border border-cyan-500/30 bg-gray-800/50 flex items-center justify-center hover:bg-cyan-500/10 hover:border-cyan-500/50 transition-all disabled:opacity-30 disabled:cursor-not-allowed"
+                    className="flex-shrink-0 w-10 h-10 rounded-full border border-cyan-500/30 bg-gray-800/50 backdrop-blur-sm flex items-center justify-center hover:bg-cyan-500/10 hover:border-cyan-500/50 hover:scale-110 active:scale-95 transition-all disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:scale-100"
                     aria-label="Next themes"
                 >
-                    <ChevronRightIcon className="w-5 h-5 text-cyan-400" />
+                    <ChevronRight className="w-5 h-5 text-cyan-400" />
                 </button>
             </div>
 
-            {/* Pagination dots */}
-            <div className="flex justify-center gap-2 mt-6">
-                {Array.from({ length: maxIndex + 1 }).map((_, index) => (
-                    <button
-                        key={index}
-                        onClick={() => setCurrentIndex(index)}
-                        className={`h-2 rounded-full transition-all ${
-                            index === currentIndex
-                                ? 'bg-cyan-400 w-8'
-                                : 'bg-gray-600 hover:bg-gray-500 w-2'
-                        }`}
-                        aria-label={`Go to slide ${index + 1}`}
-                    />
-                ))}
+            {/* Pagination Dots */}
+            {totalPages > 1 && (
+                <div className="flex justify-center items-center gap-2 mt-6">
+                    {Array.from({ length: totalPages }).map((_, index) => (
+                        <button
+                            key={index}
+                            onClick={() => setCurrentIndex(index)}
+                            className={`h-2 rounded-full transition-all ${
+                                index === currentIndex
+                                    ? 'bg-cyan-400 w-8'
+                                    : 'bg-gray-600 hover:bg-gray-500 w-2'
+                            }`}
+                            aria-label={`Go to slide ${index + 1}`}
+                            aria-current={index === currentIndex ? 'true' : 'false'}
+                        />
+                    ))}
+                </div>
+            )}
+
+            {/* Optional: Show current position indicator */}
+            <div className="text-center mt-3 text-xs text-gray-400 font-mono">
+                {currentIndex + 1} / {totalPages}
             </div>
         </div>
     );
