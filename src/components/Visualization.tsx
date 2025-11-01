@@ -170,7 +170,7 @@ export function Visualization() {
             }}
             mobileClassName="custom-mobile-style"
           >
-              <EmbeddedSection file="/src/components/graph.html" scale={0.7} height={800} />
+              <EmbeddedSection file="/graph.html" scale={0.7} height={800} />
           </VisualizationContainer>
 
         );
@@ -186,7 +186,7 @@ export function Visualization() {
             }}
             mobileClassName="custom-mobile-style"
           >
-              <EmbeddedSection file="/src/components/dashboard.html" scale={0.8} height={800} />
+              <EmbeddedSection file="/dashboard.html" scale={0.8} height={800} />
           </VisualizationContainer>
         );
       case 'classic':
@@ -201,7 +201,7 @@ export function Visualization() {
             }}
             mobileClassName="custom-mobile-style"
           >
-              <EmbeddedSection file="/src/components/classic.html" scale={0.8} height={800} />
+              <EmbeddedSection file="/classic.html" scale={0.8} height={800} />
 
           </VisualizationContainer>
         );
