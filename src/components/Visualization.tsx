@@ -2,7 +2,7 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import { motion } from 'framer-motion';
 import { LayoutGridIcon, NetworkIcon, BarChart3Icon } from 'lucide-react';
-import { ClassicLayoutDemo } from './ClassicLayoutDemo.tsx';
+import ClassicLayoutEmbed from './ClassicLayoutDemo.tsx';
 import { DashboardDemo } from './DashboardDemo.tsx';
 import GraphDemo from './GraphDemo.tsx';
 
@@ -170,7 +170,7 @@ export function Visualization() {
             }}
             mobileClassName="custom-mobile-style"
           >
-            <GraphDemo />
+              <EmbeddedSection file="/src/components/graph.html" scale={0.7} height={800} />
           </VisualizationContainer>
 
         );
@@ -186,7 +186,7 @@ export function Visualization() {
             }}
             mobileClassName="custom-mobile-style"
           >
-            <DashboardDemo />
+              <EmbeddedSection file="/src/components/dashboard.html" scale={0.8} height={800} />
           </VisualizationContainer>
         );
       case 'classic':
@@ -201,7 +201,8 @@ export function Visualization() {
             }}
             mobileClassName="custom-mobile-style"
           >
-            <ClassicLayoutDemo />
+              <EmbeddedSection file="/src/components/classic.html" scale={0.8} height={800} />
+
           </VisualizationContainer>
         );
       default:
@@ -281,4 +282,42 @@ export function Visualization() {
       </div>
     </section>
   );
+}
+
+interface EmbeddedSectionProps {
+    file: string;
+    scale?: number; // optional, default 1
+    height?: number; // optional, default 800
+}
+
+
+export default function EmbeddedSection({
+                                            file,
+                                            scale = 1,
+                                            height = 800,
+                                        }: EmbeddedSectionProps) {
+    return (
+        <section
+            className="w-full border rounded-xl overflow-hidden"
+            style={{ height }}
+        >
+            <div
+                style={{
+                    width: `${100 / scale}%`,
+                    height: `${100 / scale}%`,
+                    transform: `scale(${scale})`,
+                    transformOrigin: '0 0',
+                }}
+            >
+                <iframe
+                    src={file} // ✅ correct syntax
+                    title="Embedded Section"
+                    className="w-full h-full border-0"
+                    style={{
+                        border: '0',
+                    }}
+                />
+            </div>
+        </section>
+    );
 }
