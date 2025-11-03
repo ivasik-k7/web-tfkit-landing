@@ -1,75 +1,72 @@
-# React + TypeScript + Vite
+# Web TFKit Landing
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A modern, responsive landing page built with TypeScript for the TFKit CLI tool. This project serves as the official web presence for TFKit, featuring comprehensive documentation, interactive examples, and installation guides.
 
-Currently, two official plugins are available:
+## Overview
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+This repository contains the source code for the TFKit landing page, designed to provide developers with an intuitive and informative experience when exploring the TFKit CLI toolkit. The site showcases features, provides detailed documentation, and offers resources to help users get started quickly.
 
-## React Compiler
+## Features
 
-The React Compiler is enabled on this template. See [this documentation](https://react.dev/learn/react-compiler) for more information.
+- **High Performance**: Built with Vite and optimized for fast loading times
+- **Fully Responsive**: Works seamlessly across desktop, tablet, and mobile devices
+- **Modern Design**: Clean, professional interface with a developer-focused dark theme
+- **Interactive Documentation**: Live code examples and interactive command demonstrations
+- **SEO Optimized**: Proper meta tags and semantic HTML structure
+- **Accessible**: WCAG compliant with keyboard navigation and screen reader support
 
-Note: This will impact Vite dev & build performances.
+## Technology Stack
 
-## Expanding the ESLint configuration
+- **Framework**: React 18 with TypeScript
+- **Build Tool**: Vite
+- **Styling**: Tailwind CSS
+- **Icons**: Lucide React
+- **Deployment**: Configured for Netlify
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+## Getting Started
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+### Prerequisites
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+- Node.js 18 or higher
+- npm, yarn, or pnpm
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+### Installation
+
+```bash
+# Clone the repository
+git clone https://github.com/ivasik-k7/web-tfkit-landing.git
+cd web-tfkit-landing
+
+# Install dependencies
+npm install
+
+# Start development server
+npm run dev
+
+# Build for production
+npm run build
+
+# Preview production build
+npm run preview
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+## Contributing
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+We welcome contributions from the community. Please read our [Contributing Guidelines](CONTRIBUTING.md) for details on:
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+- Reporting bugs and issues
+- Suggesting new features and improvements
+- Submitting pull requests
+- Following our code style standards
+
+## License
+
+This project is open source and available under the [MIT License](LICENSE).
+
+## Live Website
+
+Visit the official TFKit landing page: [https://tfkit.netlify.app](https://tfkit.netlify.app)
+
+---
+
+This landing page is part of the TFKit ecosystem and works alongside the main [TFKit CLI tool repository](https://github.com/ivasik-k7/tfkit).
