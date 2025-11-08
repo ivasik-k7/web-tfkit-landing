@@ -78,17 +78,20 @@
   text-align: center;
 }
 
-/* Title styling matching loading screen logo */
 .hero-title {
   font-size: clamp(4rem, 10vw, 7rem);
   font-weight: 800;
   margin-bottom: 1rem;
+  line-height: 1;
+
   background: linear-gradient(135deg, #7c3aed 0%, #2563eb 50%, #06b6d4 100%);
   background-clip: text;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
-  background-size: 200% 200%;
-  animation: gradientShift 3s ease infinite;
+
+  background-size: 400% 400%;
+
+  animation: 6s ease-in-out infinite, textGlitch 8s linear infinite, infinite;
 }
 
 @keyframes gradientShift {

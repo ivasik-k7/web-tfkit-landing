@@ -5,7 +5,7 @@ import { Features } from './components/Features';
 import { Scrollbar } from './components/Scrollbar';
 import { Footer } from './components/Footer';
 import { Visualization } from './components/Visualization';
-import { BuyMeACoffee } from './components/BuyMeACoffee';
+import { CryptoDonation } from './components/CryptoDonation'
 
 export function App() {
   return (
@@ -15,7 +15,8 @@ export function App() {
         <Features />
 
         <Visualization />
-        <BuyMeACoffee />
+        <CryptoDonation />
+        {/* <BuyMeACoffee /> */}
         <Footer />
         {/* Add other components here */}
       </div>
