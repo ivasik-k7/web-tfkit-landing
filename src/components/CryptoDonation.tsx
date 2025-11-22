@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import { Wallet, Zap, Copy, Check, X, Target, RotateCcw, TrendingUp } from 'lucide-react';
 
@@ -49,22 +49,6 @@ const CRYPTO_ADDRESSES: CryptoAddress[] = [
         color: '#F3BA2F',
         network: 'BNB Smart Chain'
     },
-    // {
-    //     symbol: 'USDC',
-    //     name: 'USD Coin',
-    //     address: '0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb1',
-    //     icon: '$',
-    //     color: '#2775CA',
-    //     network: 'Ethereum / BSC / Polygon'
-    // },
-    // {
-    //     symbol: 'USDT',
-    //     name: 'Tether',
-    //     address: '0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb1',
-    //     icon: '₮',
-    //     color: '#26A17B',
-    //     network: 'Ethereum / BSC / Tron'
-    // }
 ];
 
 // --- Theme Colors ---
@@ -152,16 +136,9 @@ export function CryptoDonation() {
         }, 2000);
     };
 
-    const getGameReward: () => GameReward = useCallback(() => {
-        if (gameScore >= 50) return { level: 'Whale Status', multiplier: '10x', icon: <span className="text-2xl">🐋</span> };
-        if (gameScore >= 35) return { level: 'Diamond Hands', multiplier: '5x', icon: <span className="text-2xl">💎</span> };
-        if (gameScore >= 25) return { level: 'Hodler', multiplier: '3x', icon: <span className="text-2xl">🚀</span> };
-        if (gameScore >= 15) return { level: 'Miner', multiplier: '2x', icon: <span className="text-2xl">⛏️</span> };
-        return { level: 'Newbie', multiplier: '1x', icon: <span className="text-2xl">🌱</span> };
-    }, [gameScore]);
 
     return (
-        <div className="fixed bottom-6 right-6 z-50 font-mono">
+        <div className="fixed left-6 top-1/2 transform -translate-y-1/2 z-50 font-mono">
             {/* Particle Layer */}
             <AnimatePresence>
                 {particles.map(particle => (
@@ -184,7 +161,7 @@ export function CryptoDonation() {
                 ))}
             </AnimatePresence>
 
-            {/* Floating Button */}
+            {/* Floating Button - App Color Scheme */}
             <motion.button
                 className="relative group w-14 h-14 z-50"
                 onHoverStart={() => setIsHovered(true)}
@@ -193,75 +170,153 @@ export function CryptoDonation() {
                 aria-expanded={isExpanded}
                 aria-label={isExpanded ? "Close crypto panel" : "Open crypto panel"}
             >
-                {/* Animated Rings */}
+                {/* Animated gradient rings using your app colors */}
                 <motion.div
-                    className="absolute inset-0 rounded-full border-2 border-[#00ff88]"
-                    animate={prefersReducedMotion ? {} : {
-                        scale: [1, 1.3, 1],
-                        opacity: [0.6, 0.3, 0.6],
+                    className="absolute inset-0 rounded-full bg-gradient-to-r from-[#7c3aed]/40 to-[#2563eb]/40"
+                    animate={{
+                        scale: [1, 1.12, 1],
+                        opacity: [0.4, 0.2, 0.4],
                     }}
                     transition={{
-                        duration: 2.5,
+                        duration: 3,
                         repeat: Infinity,
                         repeatType: "loop"
                     }}
                 />
                 <motion.div
-                    className="absolute inset-0 rounded-full border-2 border-[#00d4ff]"
-                    animate={prefersReducedMotion ? {} : {
-                        scale: [1, 1.5, 1],
-                        opacity: [0.4, 0.1, 0.4],
+                    className="absolute inset-0 rounded-full bg-gradient-to-r from-[#2563eb]/30 to-[#06b6d4]/30"
+                    animate={{
+                        scale: [1, 1.2, 1],
+                        opacity: [0.3, 0.1, 0.3],
                     }}
                     transition={{
-                        duration: 3,
+                        duration: 4,
                         repeat: Infinity,
                         repeatType: "loop",
-                        delay: 0.5
+                        delay: 1
                     }}
                 />
 
-                {/* Main Button */}
+                {/* Main Button - Glass morphism with your brand colors */}
                 <motion.div
-                    className={`relative w-full h-full ${THEME.GRADIENT_BUTTON} text-white rounded-full shadow-lg border-2 ${THEME.BORDER_GLOW} flex items-center justify-center`}
-                    whileHover={{ scale: 1.1, rotate: isExpanded ? 0 : 180 }}
+                    className="relative w-full h-full bg-[#0f172a]/80 backdrop-blur-md text-white rounded-2xl shadow-2xl border border-[#06b6d4]/30 flex items-center justify-center"
+                    whileHover={{
+                        scale: 1.05,
+                        rotate: isExpanded ? 0 : 8,
+                        backgroundColor: 'rgba(15, 23, 42, 0.9)',
+                        borderColor: 'rgba(6, 182, 212, 0.6)'
+                    }}
                     whileTap={{ scale: 0.95 }}
-                    transition={{ duration: 0.3 }}
+                    transition={{ duration: 0.3, ease: 'easeOut' }}
                     style={{
-                        boxShadow: '0 0 20px rgba(0, 255, 136, 0.5), 0 0 40px rgba(0, 212, 255, 0.3)',
+                        boxShadow: `
+                    0 8px 32px rgba(0, 0, 0, 0.3),
+                    0 0 20px rgba(6, 182, 212, 0.3),
+                    0 0 0 1px rgba(255, 255, 255, 0.1),
+                    inset 0 1px 0 rgba(255, 255, 255, 0.1),
+                    inset 0 -1px 0 rgba(0, 0, 0, 0.2)
+                `,
                     }}
                 >
-                    {isExpanded ? <X className="w-6 h-6" /> : <Wallet className="w-6 h-6" />}
+                    <motion.div
+                        animate={{
+                            scale: isExpanded ? 0.9 : 1,
+                            rotate: isExpanded ? 90 : 0
+                        }}
+                        transition={{ duration: 0.4, ease: 'backOut' }}
+                    >
+                        {isExpanded ? (
+                            <X className="w-5 h-5 text-white/90" />
+                        ) : (
+                            <motion.div
+                                animate={{
+                                    scale: [1, 1.1, 1],
+                                    opacity: [0.9, 1, 0.9]
+                                }}
+                                transition={{
+                                    duration: 2,
+                                    repeat: Infinity,
+                                    repeatType: "reverse"
+                                }}
+                            >
+                                <Wallet className="w-5 h-5 text-[#06b6d4]" />
+                            </motion.div>
+                        )}
+                    </motion.div>
+
+                    {/* Subtle glow effect with your cyan color */}
+                    {!isExpanded && (
+                        <motion.div
+                            className="absolute inset-0 rounded-2xl bg-gradient-to-r from-[#06b6d4]/20 to-[#8b5cf6]/20"
+                            animate={{
+                                opacity: [0.3, 0.6, 0.3],
+                            }}
+                            transition={{
+                                duration: 2,
+                                repeat: Infinity,
+                            }}
+                        />
+                    )}
                 </motion.div>
 
-                {/* Tooltip */}
+                {/* Enhanced Tooltip with better positioning for left side */}
                 <AnimatePresence>
                     {isHovered && !isExpanded && (
                         <motion.div
-                            className={`absolute bottom-full right-0 mb-3 ${THEME.BG_PANEL} backdrop-blur-xl text-white px-4 py-2 rounded-lg border-2 ${THEME.BORDER_GLOW} shadow-lg whitespace-nowrap`}
-                            initial={{ opacity: 0, y: 5 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            exit={{ opacity: 0, y: 5 }}
-                            style={{ boxShadow: '0 0 20px rgba(0, 255, 136, 0.4)' }}
+                            className="absolute left-full ml-4 top-1/2 transform -translate-y-1/2 bg-[#0f172a]/95 backdrop-blur-xl text-white px-3 py-2 rounded-xl border border-[#06b6d4]/30 shadow-2xl whitespace-nowrap z-[60]"
+                            initial={{ opacity: 0, x: -5, scale: 0.9 }}
+                            animate={{ opacity: 1, x: 0, scale: 1 }}
+                            exit={{ opacity: 0, x: -5, scale: 0.9 }}
+                            style={{
+                                boxShadow: `
+                            0 20px 40px rgba(0, 0, 0, 0.4),
+                            0 0 20px rgba(6, 182, 212, 0.3),
+                            0 0 0 1px rgba(255, 255, 255, 0.1)
+                        `,
+                            }}
                         >
-                            <div className={`flex items-center gap-2 text-sm font-bold ${THEME.ACCENT_PRIMARY}`}>
-                                <Zap className="w-4 h-4" />
-                                Support me :)
+                            <div className="flex items-center gap-2 text-sm font-semibold bg-gradient-to-r from-[#06b6d4] to-[#8b5cf6] bg-clip-text text-transparent">
+                                <Zap className="w-3 h-3 text-[#06b6d4]" />
+                                Support Development
                             </div>
+                            <div className="text-xs text-[#94a3b8] mt-1">
+                                Crypto donations welcome
+                            </div>
+
+                            {/* Tooltip arrow - positioned to center vertically */}
+                            <div className="absolute -left-1 top-1/2 transform -translate-y-1/2 w-2 h-2 bg-[#0f172a] border-l border-t border-[#06b6d4]/30 rotate-45" />
                         </motion.div>
                     )}
                 </AnimatePresence>
+
+                {/* Additional ambient glow */}
+                {!isExpanded && (
+                    <motion.div
+                        className="absolute inset-0 rounded-2xl bg-gradient-to-r from-[#06b6d4]/10 to-[#8b5cf6]/10"
+                        animate={{
+                            opacity: [0.1, 0.2, 0.1],
+                        }}
+                        transition={{
+                            duration: 3,
+                            repeat: Infinity,
+                        }}
+                    />
+                )}
             </motion.button>
 
-            {/* Expanded Panel */}
+            {/* Expanded Panel - Now opens to the right from left center position */}
             <AnimatePresence>
                 {isExpanded && (
                     <motion.div
-                        className={`absolute bottom-20 right-0 w-96 ${THEME.BG_PANEL} backdrop-blur-2xl border-2 ${THEME.BORDER_GLOW} rounded-2xl shadow-2xl overflow-hidden ${THEME.TEXT_PRIMARY}`}
-                        initial={{ opacity: 0, scale: 0.8, y: 20 }}
-                        animate={{ opacity: 1, scale: 1, y: 0 }}
-                        exit={{ opacity: 0, scale: 0.8, y: 20 }}
+                        className={`absolute left-20 top-1/2 transform -translate-y-1/2 w-96 ${THEME.BG_PANEL} backdrop-blur-2xl border-2 border-[#06b6d4] rounded-2xl shadow-2xl overflow-hidden ${THEME.TEXT_PRIMARY}`}
+                        initial={{ opacity: 0, scale: 0.8, x: -20 }}
+                        animate={{ opacity: 1, scale: 1, x: 0 }}
+                        exit={{ opacity: 0, scale: 0.8, x: -20 }}
                         transition={{ type: "spring", damping: 20, stiffness: 200 }}
-                        style={{ boxShadow: '0 0 40px rgba(0, 255, 136, 0.3), 0 0 80px rgba(0, 212, 255, 0.2)' }}
+                        style={{
+                            boxShadow: '0 0 40px rgba(6, 182, 212, 0.3), 0 0 80px rgba(139, 92, 246, 0.2)',
+                            borderColor: 'rgba(6, 182, 212, 0.6)'
+                        }}
                     >
                         {/* Header */}
                         <div className={`p-4 border-b-2 ${THEME.BORDER} relative overflow-hidden ${THEME.BG_DARK}`}>
@@ -270,8 +325,8 @@ export function CryptoDonation() {
                                 className="absolute inset-0 opacity-10"
                                 animate={{
                                     background: [
-                                        'linear-gradient(90deg, #00ff88 0%, transparent 50%, #00d4ff 100%)',
-                                        'linear-gradient(90deg, #00d4ff 0%, transparent 50%, #00ff88 100%)',
+                                        'linear-gradient(90deg, #7c3aed 0%, transparent 50%, #06b6d4 100%)',
+                                        'linear-gradient(90deg, #06b6d4 0%, transparent 50%, #7c3aed 100%)',
                                     ]
                                 }}
                                 transition={{ duration: 3, repeat: Infinity, repeatType: "reverse" }}
@@ -287,7 +342,7 @@ export function CryptoDonation() {
                                             CRYPTO DONATIONS
                                         </h3>
                                         <p className={`${THEME.TEXT_MUTED} text-xs tracking-wide`}>
-                                            SUPPORT ME WITH CRYPTO!
+                                            SUPPORT DEVELOPMENT
                                         </p>
                                     </div>
                                 </div>
@@ -296,17 +351,6 @@ export function CryptoDonation() {
 
                         {/* Content */}
                         <div className="p-4 max-h-[500px] overflow-y-auto custom-scrollbar">
-                            {/* Mini-Game */}
-                            {/* <GamePanel
-                                phase={gamePhase}
-                                setGamePhase={setGamePhase}
-                                startGame={startCryptoGame}
-                                handleClick={handleBlockClick}
-                                score={gameScore}
-                                timeLeft={timeLeft}
-                                getReward={getGameReward}
-                            /> */}
-
                             {/* Crypto Addresses */}
                             <h4 className={`${THEME.ACCENT_PRIMARY} text-sm font-black mb-3 flex items-center gap-2 tracking-wider`}>
                                 <TrendingUp className="w-4 h-4" />
@@ -375,23 +419,6 @@ export function CryptoDonation() {
                     </motion.div>
                 )}
             </AnimatePresence>
-
-            {/* <style jsx>{`
-                .custom-scrollbar::-webkit-scrollbar {
-                    width: 6px;
-                }
-                .custom-scrollbar::-webkit-scrollbar-track {
-                    background: #1a1f35;
-                    border-radius: 10px;
-                }
-                .custom-scrollbar::-webkit-scrollbar-thumb {
-                    background: #00ff88;
-                    border-radius: 10px;
-                }
-                .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-                    background: #00d4ff;
-                }
-            `}</style> */}
         </div>
     );
 }
@@ -492,7 +519,7 @@ const GamePanel: React.FC<{
                             </p>
                             <motion.button
                                 className={`w-full py-3 rounded-lg text-white font-black ${THEME.GRADIENT_BUTTON} shadow-lg border-2 ${THEME.BORDER_GLOW} text-sm tracking-wider`}
-                                whileHover={{ scale: 1.05, boxShadow: '0 0 20px rgba(0, 255, 136, 0.6)' }}
+                                whileHover={{ scale: 1.05, boxShadow: '0 0 20px rgba(6, 182, 212, 0.6)' }}
                                 whileTap={{ scale: 0.95 }}
                                 onClick={startGame}
                             >
@@ -531,9 +558,9 @@ const GamePanel: React.FC<{
                             <motion.button
                                 className="w-32 h-32 mx-auto rounded-2xl text-6xl cursor-pointer shadow-2xl border-4"
                                 style={{
-                                    background: 'linear-gradient(135deg, #00ff88, #00d4ff)',
-                                    borderColor: '#00ff88',
-                                    boxShadow: '0 0 40px rgba(0, 255, 136, 0.6)'
+                                    background: 'linear-gradient(135deg, #06b6d4, #8b5cf6)',
+                                    borderColor: '#06b6d4',
+                                    boxShadow: '0 0 40px rgba(6, 182, 212, 0.6)'
                                 }}
                                 whileHover={{ scale: 1.1, rotate: 5 }}
                                 whileTap={{ scale: 0.9 }}
