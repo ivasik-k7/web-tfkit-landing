@@ -1,262 +1,255 @@
-import { motion, useMotionValue, useSpring, useTransform } from 'framer-motion';
-import { useRef, type MouseEvent } from 'react';
+import React, { useState, useRef, useCallback } from 'react'
+import { motion } from 'framer-motion'
 import {
-  ZapIcon,
-  ShieldCheckIcon,
-  FileTextIcon,
-  BarChart3Icon,
-  GitBranchIcon,
   NetworkIcon,
-  SparklesIcon,
-  ArrowRightIcon,
-  type LucideIcon,
-  SearchIcon
-} from 'lucide-react';
+  SearchIcon,
+  AlertTriangleIcon,
+  LayersIcon,
+  GitGraphIcon,
+  ZapIcon,
+  CpuIcon,
+  ShieldIcon,
+  GitBranchIcon,
+  CloudIcon,
+  CodeIcon,
+  SettingsIcon,
+  FileTextIcon,
+} from 'lucide-react'
 
-interface Feature {
-  icon: LucideIcon;
-  title: string;
-  description: string;
-  gradient: string;
-  command: string;
-  useCase: string;
+export function Features() {
+  const containerRef = useRef<HTMLDivElement>(null)
+  const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 })
+  const [isMobile, setIsMobile] = useState(false)
+
+  // Check for mobile devices and disable parallax effects
+  React.useEffect(() => {
+    const checkMobile = () => {
+      const mobile = window.innerWidth < 1024
+      setIsMobile(mobile)
+    }
+
+    checkMobile()
+    window.addEventListener('resize', checkMobile)
+    return () => window.removeEventListener('resize', checkMobile)
+  }, [])
+
+  const handleMouseMove = useCallback((e: React.MouseEvent) => {
+    if (!containerRef.current || isMobile) return
+
+    const rect = containerRef.current.getBoundingClientRect()
+    const centerX = rect.left + rect.width / 2
+    const centerY = rect.top + rect.height / 2
+    const x = (e.clientX - centerX) / (rect.width / 2)
+    const y = (e.clientY - centerY) / (rect.height / 2)
+
+    setMousePosition({ x, y })
+  }, [isMobile])
+
+  const features = [
+    {
+      icon: NetworkIcon,
+      title: 'Interactive Graph Visualization',
+      description: 'Explore your infrastructure with interactive node graphs. Pan, zoom, and click to understand resource relationships.',
+      gradient: 'from-purple-500 to-cyan-500',
+    },
+    {
+      icon: SearchIcon,
+      title: 'Deep State Analysis',
+      description: 'Analyze your Terraform state files with detailed insights into resource configurations and dependencies.',
+      gradient: 'from-blue-500 to-cyan-500',
+    },
+    {
+      icon: AlertTriangleIcon,
+      title: 'Dependency Detection',
+      description: 'Automatically detect circular dependencies and potential issues in your infrastructure code.',
+      gradient: 'from-amber-500 to-orange-500',
+    },
+    {
+      icon: LayersIcon,
+      title: 'Module Visualization',
+      description: 'Visualize module hierarchies and understand how your infrastructure is organized across environments.',
+      gradient: 'from-emerald-500 to-green-500',
+    },
+    {
+      icon: FileTextIcon,
+      title: 'Data Integration',
+      description: 'Get your analysis in JSON, YAML, CSV, DOT, MMD, etc - perfect for docs, dashboards, or CI/CD pipelines',
+      gradient: 'from-violet-500 to-purple-500',
+    },
+    {
+      icon: ZapIcon,
+      title: 'Fast & Lightweight',
+      description: 'Built with performance in mind. Analyze large state files instantly with optimized algorithms.',
+      gradient: 'from-cyan-500 to-blue-500',
+    },
+
+  ]
+
+  const parallaxTransform = isMobile
+    ? {}
+    : {
+      transform: `rotateX(${mousePosition.y * -2}deg) rotateY(${mousePosition.x * 2}deg)`,
+    }
+
+  return (
+    <section
+      ref={containerRef}
+      className="features-container"
+      onMouseMove={handleMouseMove}
+      aria-labelledby="features-heading"
+    >
+      <div className="features-parallax-scene" style={parallaxTransform}>
+        <div
+          className="features-background-layer"
+          style={{
+            transform: isMobile
+              ? 'translateZ(-400px)'
+              : `translateZ(-400px) translateX(${mousePosition.x * -100}px) translateY(${mousePosition.y * -100}px)`,
+          }}
+        />
+
+        <div
+          className="features-floating-elements"
+          style={{ transform: `translateZ(-200px)` }}
+        >
+          <div
+            className="floating-element element-1"
+            style={{
+              transform: isMobile
+                ? 'none'
+                : `translateX(${mousePosition.x * -60}px) translateY(${mousePosition.y * -60}px)`,
+            }}
+          />
+          <div
+            className="floating-element element-2"
+            style={{
+              transform: isMobile
+                ? 'none'
+                : `translateX(${mousePosition.x * -40}px) translateY(${mousePosition.y * -40}px)`,
+            }}
+          />
+          <div
+            className="floating-element element-3"
+            style={{
+              transform: isMobile
+                ? 'none'
+                : `translateX(${mousePosition.x * -50}px) translateY(${mousePosition.y * -50}px)`,
+            }}
+          />
+        </div>
+
+        <div className="features-content" style={{ transform: `translateZ(50px)` }}>
+          <motion.header
+            initial={{ opacity: 0, y: 40 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6 }}
+            viewport={{ once: true, margin: '-50px' }}
+            className="features-header"
+          >
+            <h2 id="features-heading" className="gradient-text">
+              Powerful Features
+            </h2>
+            <p className="features-subtitle">
+              Everything you need to understand and visualize your Terraform infrastructure across all cloud providers
+            </p>
+          </motion.header>
+
+          <div className="features-grid">
+            {features.map((feature, index) => (
+              <FeatureCard
+                key={feature.title}
+                feature={feature}
+                index={index}
+                isMobile={isMobile}
+              />
+            ))}
+          </div>
+        </div>
+      </div>
+    </section>
+  )
 }
 
 interface FeatureCardProps {
-  feature: Feature;
-  index: number;
+  feature: {
+    icon: React.ComponentType<any>
+    title: string
+    description: string
+    gradient?: string
+  }
+  index: number
+  isMobile: boolean
 }
 
-const features: Feature[] = [
-  {
-    icon: ZapIcon,
-    title: 'Quick Scan',
-    description: 'Get instant insights into your Terraform project - resources, health score, and potential issues in seconds',
-    gradient: 'from-yellow-400 to-orange-500',
-    command: 'tfkit scan --open',
-    useCase: 'Project overview'
-  },
-  {
-    icon: SearchIcon,
-    title: 'Validate Configs',
-    description: 'Check syntax, find unused variables, security issues, and best practice violations before deployment',
-    gradient: 'from-green-400 to-emerald-600',
-    command: 'tfkit validate --all',
-    useCase: 'Pre-commit checks'
-  },
-  {
-    icon: FileTextIcon,
-    title: 'Export Data',
-    description: 'Get your analysis in JSON, YAML, CSV - perfect for docs, dashboards, or CI/CD pipelines',
-    gradient: 'from-blue-400 to-cyan-500',
-    command: 'tfkit export --format json',
-    useCase: 'Tool integration'
-  },
-  {
-    icon: BarChart3Icon,
-    title: 'Visualize',
-    description: 'See your infrastructure as interactive graphs with 10+ themes. No more guessing about dependencies',
-    gradient: 'from-purple-400 to-pink-500',
-    command: 'tfkit scan --theme dark --layout graph',
-    useCase: 'Architecture review'
-  },
-  {
-    icon: GitBranchIcon,
-    title: 'CI/CD Ready',
-    description: 'SARIF output, fail-fast mode, and quiet options that actually work in automation',
-    gradient: 'from-indigo-400 to-violet-600',
-    command: 'tfkit validate --format sarif',
-    useCase: 'Pipeline integration'
-  },
-  {
-    icon: NetworkIcon,
-    title: 'Dependency Map',
-    description: 'Understand how everything connects with clear dependency tracking and relationship mapping',
-    gradient: 'from-rose-400 to-red-500',
-    command: 'tfkit scan --layout graph',
-    useCase: 'Impact analysis'
-  }
-];
+function FeatureCard({ feature, index, isMobile }: FeatureCardProps) {
+  const cardRef = useRef<HTMLDivElement>(null)
+  const [cardRotation, setCardRotation] = useState({ x: 0, y: 0 })
+  const [isHovered, setIsHovered] = useState(false)
 
-function FeatureCard({ feature, index }: FeatureCardProps) {
-  const ref = useRef<HTMLDivElement>(null);
-  const x = useMotionValue(0);
-  const y = useMotionValue(0);
+  const handleMouseMove = useCallback((e: React.MouseEvent) => {
+    if (!cardRef.current || isMobile) return
 
-  const mouseXSpring = useSpring(x);
-  const mouseYSpring = useSpring(y);
+    const rect = cardRef.current.getBoundingClientRect()
+    const centerX = rect.left + rect.width / 2
+    const centerY = rect.top + rect.height / 2
+    const x = (e.clientX - centerX) / (rect.width / 2)
+    const y = (e.clientY - centerY) / (rect.height / 2)
 
-  const rotateX = useTransform(mouseYSpring, [-0.5, 0.5], ["17.5deg", "-17.5deg"]);
-  const rotateY = useTransform(mouseXSpring, [-0.5, 0.5], ["-17.5deg", "17.5deg"]);
+    setCardRotation({ x: y * 10, y: x * 10 })
+  }, [isMobile])
 
-  const handleMouseMove = (e: MouseEvent) => {
-    if (!ref.current) return;
+  const handleMouseEnter = useCallback(() => {
+    setIsHovered(true)
+  }, [])
 
-    const rect = ref.current.getBoundingClientRect();
+  const handleMouseLeave = useCallback(() => {
+    setCardRotation({ x: 0, y: 0 })
+    setIsHovered(false)
+  }, [])
 
-    const width = rect.width;
-    const height = rect.height;
-
-    const mouseX = e.clientX - rect.left;
-    const mouseY = e.clientY - rect.top;
-
-    const xPct = mouseX / width - 0.5;
-    const yPct = mouseY / height - 0.5;
-
-    x.set(xPct);
-    y.set(yPct);
-  };
-
-  const handleMouseLeave = () => {
-    x.set(0);
-    y.set(0);
-  };
+  const cardTransform = isMobile
+    ? {}
+    : {
+      transform: `perspective(1000px) rotateX(${cardRotation.x}deg) rotateY(${cardRotation.y}deg) translateZ(20px)`,
+    }
 
   return (
-    <motion.div
-      ref={ref}
-      initial={{ opacity: 0, y: 60, scale: 0.9 }}
+    <motion.article
+      ref={cardRef}
+      initial={{ opacity: 0, y: 40, scale: 0.95 }}
       whileInView={{ opacity: 1, y: 0, scale: 1 }}
       transition={{
-        duration: 0.8,
-        delay: index * 0.15,
+        duration: 0.5,
+        delay: Math.min(index * 0.1, 0.6),
         type: "spring",
         stiffness: 100
       }}
-      viewport={{ once: true, margin: "-50px" }}
-      className="feature-card-container"
+      viewport={{ once: true, margin: '-50px' }}
+      className="feature-card"
       onMouseMove={handleMouseMove}
+      onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
-      style={{
-        rotateX,
-        rotateY,
-        transformStyle: "preserve-3d",
-      }}
+      style={cardTransform}
+      whileHover={!isMobile ? { y: -8 } : {}}
     >
-      <div className="feature-card-glow" />
-
-      <div className="feature-card">
-        {/* Animated background elements */}
-        <div className="feature-card-bg-pattern" />
-        <div className="feature-card-gradient" />
-
-        {/* Header with icon and badge */}
-        <div className="feature-header">
-          <motion.div
-            className="feature-icon-wrapper"
-            whileHover={{ scale: 1.1, rotate: 5 }}
-            transition={{ type: "spring", stiffness: 300 }}
-          >
-            <div className="feature-icon-bg">
-              <SparklesIcon className="feature-sparkle" />
-            </div>
-            <feature.icon className="feature-icon" />
-          </motion.div>
-
-          {/* <div className="feature-badge">
-            <span>{feature.capability}</span>
-          </div> */}
-        </div>
-
-        {/* Content */}
-        <div className="feature-content">
-          <h3 className="feature-title">
-            {feature.title}
-          </h3>
-
-          <p className="feature-description">
-            {feature.description}
-          </p>
-
-          {/* <div className="feature-stats">
-            <div className="stat-pill">
-              {feature.stats}
-            </div>
-          </div> */}
-        </div>
-
-        {/* Animated CTA */}
+      <div className={`feature-icon ${feature.gradient || 'from-cyan-500 to-blue-500'}`}>
         <motion.div
-          className="feature-cta"
-          whileHover={{ x: 5 }}
-          transition={{ type: "spring", stiffness: 400 }}
+          animate={isHovered ? { scale: 1.1, rotate: 5 } : { scale: 1, rotate: 0 }}
+          transition={{ type: "spring", stiffness: 300 }}
         >
-          <span>Explore feature</span>
-          <ArrowRightIcon className="cta-arrow" />
+          <feature.icon size={24} />
         </motion.div>
-
-        {/* Particle effects */}
-        <div className="feature-particles">
-          {[...Array(3)].map((_, i) => (
-            <motion.div
-              key={i}
-              className="particle"
-              animate={{
-                y: [0, -20, 0],
-                opacity: [0, 1, 0],
-              }}
-              transition={{
-                duration: 2,
-                delay: i * 0.3,
-                repeat: Infinity,
-                repeatType: "loop",
-              }}
-            />
-          ))}
-        </div>
-      </div>
-    </motion.div>
-  );
-}
-
-export function Features() {
-  return (
-    <div className="features-section-premium">
-      <div className="premium-bg">
-        {/* <div className="floating-orb orb-1" />
-        <div className="floating-orb orb-2" />
-        <div className="floating-orb orb-3" /> */}
-        <div className="animated-grid" />
-        <div className="scanlines" />
       </div>
 
-      <div className="features-container-premium">
-        <motion.div
-          initial={{ opacity: 0, y: 40 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          transition={{ duration: 1, type: "spring" }}
-          viewport={{ once: true }}
-          className="premium-header"
-        >
-          <h2 className="premium-title">
-            <span className="title-gradient">Terraform</span>
-            <span className="title-main"> Intelligence Suite</span>
-          </h2>
+      <h3>{feature.title}</h3>
+      <p>{feature.description}</p>
 
-          <motion.p
-            className="premium-subtitle"
-            initial={{ opacity: 0 }}
-            whileInView={{ opacity: 1 }}
-            transition={{ delay: 0.3, duration: 0.8 }}
-            viewport={{ once: true }}
-          >
-            Unlock deep insights into your Terraform environments with advanced analytics,
-            automated validation, and rich visual intelligence. Export, integrate, and optimize
-            effortlessly — across macOS, Linux, and Windows.
-          </motion.p>
-        </motion.div>
-
-        {/* Enhanced Features Grid */}
-        <div className="premium-features-grid">
-          {features.map((feature, index) => (
-            <FeatureCard
-              key={feature.title}
-              feature={feature}
-              index={index}
-            />
-          ))}
-        </div>
-      </div>
-    </div>
-  );
+      <motion.div
+        className="feature-hover-indicator"
+        initial={{ scale: 0 }}
+        animate={{ scale: isHovered ? 1 : 0 }}
+        transition={{ type: "spring", stiffness: 200 }}
+      />
+    </motion.article>
+  )
 }

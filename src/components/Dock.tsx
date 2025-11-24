@@ -124,7 +124,7 @@ const TEAM_MEMBERS: TeamMember[] = [
         name: "Taras Tarhanskiy",
         role: "Senior Java & Frontend Engineer",
         linkedin: "https://linkedin.com/",
-        avatar: "☕",
+        avatar: "https://iili.io/fForFa9.md.jpg",
         location: "Switzerland",
         experience: "Focus on Java backend & modern frontend",
         expertise: ["Java", "Spring Boot", "React", "TypeScript", "Frontend Architecture", "Analytics Integration"],

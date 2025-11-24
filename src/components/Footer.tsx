@@ -189,7 +189,7 @@ export function Footer() {
                                 © {currentYear} TFKit. MIT License.
                             </span>
                             <span className="footer-version">
-                                Version 0.4.44
+                                Version 0.5.17
                             </span>
                         </div>
 

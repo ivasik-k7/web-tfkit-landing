@@ -4,7 +4,7 @@ import { Features } from './components/Features';
 
 import { Scrollbar } from './components/Scrollbar';
 import { Footer } from './components/Footer';
-import { Visualization } from './components/Visualization';
+import { InteractiveVizSelector } from './components/Visualization';
 import ResponsiveDock from './components/Dock';
 
 export function App() {
@@ -16,7 +16,7 @@ export function App() {
         <Hero />
         <Features />
 
-        <Visualization />
+        <InteractiveVizSelector />
         <Footer />
       </div>
     </Scrollbar>
