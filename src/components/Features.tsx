@@ -5,15 +5,9 @@ import {
   SearchIcon,
   AlertTriangleIcon,
   LayersIcon,
-  GitGraphIcon,
   ZapIcon,
-  CpuIcon,
-  ShieldIcon,
-  GitBranchIcon,
-  CloudIcon,
-  CodeIcon,
-  SettingsIcon,
   FileTextIcon,
+  Layers,
 } from 'lucide-react'
 
 export function Features() {
@@ -94,7 +88,7 @@ export function Features() {
   return (
     <section
       ref={containerRef}
-      className="features-container"
+      className="features-container "
       onMouseMove={handleMouseMove}
       aria-labelledby="features-heading"
     >
@@ -144,13 +138,23 @@ export function Features() {
             whileInView={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6 }}
             viewport={{ once: true, margin: '-50px' }}
-            className="features-header"
+            className="text-left mb-8"
           >
-            <h2 id="features-heading" className="gradient-text">
-              Powerful Features
+            {/* Small category label */}
+            <div className="flex items-center gap-2 mb-2" style={{ color: 'var(--color-cyan)' }}>
+              <Layers size={18} />
+              <span className="text-xs font-bold tracking-[0.2em] uppercase">Tool Features</span>
+            </div>
+
+            {/* Main features header */}
+            <h2 id="features-heading" className="text-3xl md:text-4xl font-bold mb-2" style={{ color: 'var(--text-primary)' }}>
+              Explore <span className="gradient-text">Powerful Features</span>
             </h2>
-            <p className="features-subtitle">
-              Everything you need to understand and visualize your Terraform infrastructure across all cloud providers
+
+            {/* Subheading / description */}
+            <p className="text-sm md:text-base text-gray-400">
+              Everything you need to analyze, monitor, and visualize your infrastructure across all environments.
+              Switch seamlessly between dashboards, graphs, dependency views, and topology maps.
             </p>
           </motion.header>
 

@@ -1,35 +1,77 @@
-import { useEffect, useState, useRef, type ReactNode } from 'react';
+import { useEffect, useCallback, useState, useRef, type ReactNode } from 'react';
 import { motion, AnimatePresence, useInView } from 'framer-motion';
-import { LayoutGridIcon, BarChart3Icon, NetworkIcon, Loader2 } from 'lucide-react';
+import { LayoutGridIcon, BarChart3Icon, NetworkIcon, Loader2, PaintBucket } from 'lucide-react';
 
-const allVisualizations = [
+interface Visualization {
+  id: string;
+  name: string;
+  icon: React.ComponentType<any>;
+  description: string;
+  functionality: string;
+  file: string;
+  scale: number;
+  features: string[];
+}
+
+const allVisualizations: Visualization[] = [
   {
-    id: 'graph',
-    name: 'Graph Dependency Network',
-    icon: NetworkIcon,
-    description: 'Advanced network visualization mapping complex dependencies between Terraform resources and modules.',
-    functionality: 'Analyzes parsed Terraform resources to build comprehensive dependency graphs, identify failure domains, and visualize resource relationships. Enables impact analysis for changes and rapid incident response by tracing dependencies across your infrastructure.',
-    file: '/graph.html',
-    scale: 0.75
+    "id": "graph",
+    "name": "Graph Dependency Network",
+    "icon": NetworkIcon,
+    "description": "Advanced network visualization mapping complex dependencies between Terraform resources and modules with real-time analytics and interactive exploration.",
+    "functionality": "Analyzes parsed Terraform resources to build comprehensive dependency graphs, identify failure domains, and visualize resource relationships. Enables impact analysis for changes and rapid incident response by tracing dependencies across your infrastructure through interactive force-directed graphs with state-based coloring and risk assessment.",
+    "file": "/graph.html",
+    "scale": 0.75,
+    "features": [
+      "Force-directed D3.js graph with zoom, pan, and physics simulation",
+      "Global command interface with keyboard shortcuts and fuzzy search",
+      "Detailed Terraform object viewer with hover tooltips and metadata display",
+      "Visual state management with color-coded nodes and status indicators",
+      "Multiple navigation methods with physics toggles and view management",
+    ]
   }, {
-    id: 'dashboard',
-    name: 'Dashboard Metrics',
-    icon: BarChart3Icon,
-    description: 'Comprehensive overview of your infrastructure health with key metrics, resource distribution, and performance indicators across all Terraform resources.',
-    functionality: 'Aggregates parsed Terraform resources to display resource counts, state status, provider distribution, and infrastructure health metrics. Provides real-time insights into your deployment status and resource utilization.',
-    file: '/dashboard.html',
-    scale: 0.8
+    "id": "analytics",
+    "name": "Analytics Dashboard",
+    "icon": BarChart3Icon,
+    "description": "Data-heavy view with charts, graphs, and metrics for understanding Terraform infrastructure at a glance",
+    "functionality": "Displays infrastructure statistics through multiple visualization types - pie charts for distribution, bar graphs for comparisons, radar charts for dependencies, and real-time health metrics",
+    "file": "/dashboard.html",
+    "scale": 0.9,
+    "features": [
+      "Component distribution pie chart",
+      "Health status breakdown",
+      "Dependency analysis radar chart",
+      "Resource type bar graphs",
+      "Time-series activity tracking",
+      "Stacked state visualization",
+      "KPI donut charts",
+      "Click-to-filter interactions",
+      "Data export (JSON/PNG)",
+      "Keyboard-driven command palette"
+    ]
   },
   {
-    id: 'classic',
-    name: 'Classic Layout',
-    icon: LayoutGridIcon,
-    description: 'Traditional hierarchical view organizing Terraform resources in a familiar card-based interface.',
-    functionality: 'Displays parsed Terraform resources in a structured hierarchy with detailed resource attributes, filtering capabilities, and search functionality. Allows deep inspection of resource configurations and state information with easy navigation and organization.',
-    file: '/classic.html',
-    scale: 0.8
-  }];
-
+    "id": "classic",
+    "name": "Classic Dashboard",
+    "icon": LayoutGridIcon,
+    "description": "Fine infrastructure visualization with modern UI components, advanced filtering, and interactive dependency management for Terraform projects.",
+    "functionality": "Provides a complete overview of Terraform infrastructure with statistical insights, search-driven navigation, and 3D visualization capabilities. Features real-time filtering, command palette interface, and detailed component analysis with health scoring and dependency mapping.",
+    "file": "/classic.html",
+    "scale": 1.0,
+    "features": [
+      "Modern stats grid with health scoring and provider insights",
+      "Advanced search interface with filter suggestions and keyboard shortcuts",
+      "Interactive command palette with fuzzy search and quick actions",
+      "3D dependency visualization with WebGL/Canvas fallback",
+      "Real-time filtering with parsed query syntax and active tags",
+      "Component cards with state badges, dependency counts, and actions",
+      "Toast notification system with multiple alert types",
+      "Quick actions bar for common operations",
+      "Responsive design with mobile-friendly touch targets",
+      "Export functionality for dashboard data"
+    ]
+  },
+];
 interface VisualizationContainerProps {
   children: ReactNode;
   isInteractive?: boolean;
@@ -164,7 +206,6 @@ export function EmbeddedSection({
       iframe.addEventListener('touchmove', preventScroll, { passive: false });
     }
 
-    // Add smooth scroll behavior to container
     if (container) {
       container.addEventListener('wheel', (e) => {
         if (e.ctrlKey) return; // Allow zoom
@@ -189,7 +230,6 @@ export function EmbeddedSection({
     setIsLoading(false);
     setHasError(false);
 
-    // Apply smooth scroll to iframe content after load
     setTimeout(() => {
       try {
         const iframe = iframeRef.current;
@@ -227,7 +267,6 @@ export function EmbeddedSection({
     setIsLoading(true);
     setHasError(false);
 
-    // Force iframe reload by updating the key
     if (iframeRef.current) {
       iframeRef.current.src = file + '?retry=' + Date.now();
     }
@@ -339,7 +378,6 @@ export function EmbeddedSection({
           sandbox="allow-scripts allow-same-origin"
           onLoad={handleIframeLoad}
           onError={handleIframeError}
-          // Additional attributes to control scrolling
           scrolling="no"
           referrerPolicy="no-referrer"
         />
@@ -358,6 +396,70 @@ const baseMobileMessageProps = {
   },
   mobileClassName: "p-8 border-2 border-dashed border-indigo-400 bg-indigo-50/20 rounded-lg h-96 flex items-center justify-center text-center"
 };
+const VizSideDock = ({
+  isVisible,
+  allVisualizations,
+  activeView,
+  isTransitioning,
+  loadedViews,
+  handleViewChange
+}: {
+  isVisible: boolean;
+  allVisualizations: Visualization[];
+  activeView: string;
+  isTransitioning: boolean;
+  loadedViews: Set<string>;
+  handleViewChange: (viewId: string) => void;
+}) => (
+  <motion.div
+    initial={{ x: 100, opacity: 0 }}
+    animate={{
+      x: isVisible ? 0 : 100,
+      opacity: isVisible ? 1 : 0
+    }}
+    transition={{ type: "spring", stiffness: 150, damping: 25 }}
+    className="fixed z-50 right-0 bottom-6 left-1/2 transform -translate-x-1/2 md:top-1/2 md:-translate-y-1/2 md:left-auto md:right-6 md:transform-none"
+    style={{ pointerEvents: isVisible ? 'auto' : 'none' }}
+  >
+    <div className="w-[90%] max-w-xs h-16 px-4 rounded-2xl bg-theme-tertiary/80 backdrop-blur-xl border border-theme shadow-2xl flex items-center justify-around md:w-20 md:h-auto md:py-8 md:px-2 md:rounded-3xl md:flex-col md:justify-center md:gap-6">
+      {allVisualizations.map(viz => (
+        <motion.button
+          key={viz.id}
+          onClick={() => handleViewChange(viz.id)}
+          whileHover={{ scale: 1.1 }}
+          whileTap={{ scale: 0.95 }}
+          className={`group relative p-3 rounded-lg transition-all duration-200 ${activeView === viz.id
+            ? 'bg-theme-cyan/30 text-theme-cyan border border-theme shadow-lg'
+            : 'bg-transparent text-text-tertiary hover:bg-theme-tertiary hover:text-color-cyan'
+            } ${isTransitioning ? 'opacity-50 pointer-events-none' : ''}`}
+          title={viz.name}
+          disabled={isTransitioning}
+        >
+          <viz.icon size={24} />
+
+          {/* Loading indicator for loaded views */}
+          {loadedViews.has(viz.id) && (
+            <motion.div
+              initial={{ scale: 0 }}
+              animate={{ scale: 1 }}
+              className="absolute -top-1 -right-1 w-3 h-3 bg-green-400 rounded-full border-2 border-theme-tertiary"
+            />
+          )}
+
+          <motion.div
+            className="hidden md:block absolute right-full top-1/2 -translate-y-1/2 mr-3 pointer-events-none opacity-0 group-hover:opacity-100 transition duration-300"
+            initial={{ scale: 0.8 }}
+            whileInView={{ scale: 1 }}
+          >
+            <div className="bg-theme-secondary text-text-primary text-xs rounded py-1 px-3 shadow-xl whitespace-nowrap border border-theme">
+              {viz.name}
+            </div>
+          </motion.div>
+        </motion.button>
+      ))}
+    </div>
+  </motion.div>
+);
 
 export function InteractiveVizSelector() {
   const [activeView, setActiveView] = useState(allVisualizations[0].id);
@@ -368,7 +470,7 @@ export function InteractiveVizSelector() {
   const isVisible = useInView(sectionRef, { once: false, margin: "-500px 0px" });
   const containerRef = useRef<HTMLDivElement>(null);
 
-  const handleViewChange = (newView: string) => {
+  const handleViewChange = useCallback((newView: string) => {
     if (newView === activeView) return;
 
     setIsTransitioning(true);
@@ -376,25 +478,25 @@ export function InteractiveVizSelector() {
       setActiveView(newView);
       setIsTransitioning(false);
     }, 300);
-  };
+  }, [activeView]);
 
-  const handleIframeLoad = (viewId: string) => {
+  const handleIframeLoad = useCallback((viewId: string) => {
     console.log('Iframe loaded for view:', viewId);
     setLoadedViews(prev => new Set([...prev, viewId]));
-  };
+  }, []);
 
-  const handleIframeError = (viewId: string) => {
+  const handleIframeError = useCallback((viewId: string) => {
     console.error('Iframe failed for view:', viewId);
-  };
+  }, []);
 
-  const MetricsSidebar = () => (
+  const MetricsSidebar = useCallback(() => (
     <motion.div
       key={`metrics-${activeView}`}
       initial={{ opacity: 0, x: 20 }}
       animate={{ opacity: 1, x: 0 }}
       exit={{ opacity: 0, x: -20 }}
       transition={{ duration: 0.4, ease: "easeOut" }}
-      className="lg:w-1/4 w-full p-4 lg:p-0"
+      className="lg:w-1/4 w-full p-4 lg:p-0 hidden lg:block"
     >
       <div className="bg-white/5 backdrop-blur-sm p-6 rounded-lg border border-gray-700/50 shadow-xl space-y-6">
         <div>
@@ -414,79 +516,23 @@ export function InteractiveVizSelector() {
         <div className="pt-4 border-t border-gray-700/50">
           <h4 className="text-lg font-semibold text-green-400 mb-3">Key Features</h4>
           <ul className="text-sm text-gray-400 space-y-2">
-            <li className="flex items-start">
-              <span className="text-green-500 mr-2">•</span>
-              <span>Works with parsed Terraform resources and state files</span>
-            </li>
-            <li className="flex items-start">
-              <span className="text-green-500 mr-2">•</span>
-              <span>Builds dependency graphs and analytics automatically</span>
-            </li>
-            <li className="flex items-start">
-              <span className="text-green-500 mr-2">•</span>
-              <span>Interactive exploration of your infrastructure codebase</span>
-            </li>
-            <li className="flex items-start">
-              <span className="text-green-500 mr-2">•</span>
-              <span>Real-time visualization of resource relationships</span>
-            </li>
+            {activeVisualization.features.slice(0, 4).map((feature, index) => (
+              <li key={index} className="flex items-start">
+                <span className="text-green-500 mr-2">•</span>
+                <span>{feature}</span>
+              </li>
+            ))}
+            {activeVisualization.features.length > 4 && (
+              <li className="flex items-start">
+                <span className="text-green-500 mr-2">•</span>
+                <span>And much more...</span>
+              </li>
+            )}
           </ul>
         </div>
       </div>
     </motion.div>
-  );
-
-  const VizSideDock = ({ isVisible }: { isVisible: boolean }) => (
-    <AnimatePresence>
-      {isVisible && (
-        <motion.div
-          initial={{ x: 100, opacity: 0 }}
-          animate={{ x: 0, opacity: 1 }}
-          exit={{ x: 100, opacity: 0 }}
-          transition={{ type: "spring", stiffness: 150, damping: 25 }}
-          className="fixed z-50 right-0 bottom-6 left-1/2 transform -translate-x-1/2 md:top-1/2 md:-translate-y-1/2 md:left-auto md:right-6 md:transform-none"
-        >
-          <div className="w-[90%] max-w-xs h-16 px-4 rounded-2xl bg-theme-tertiary/80 backdrop-blur-xl border border-theme shadow-2xl flex items-center justify-around md:w-20 md:h-auto md:py-8 md:px-2 md:rounded-3xl md:flex-col md:justify-center md:gap-6">
-            {allVisualizations.map(viz => (
-              <motion.button
-                key={viz.id}
-                onClick={() => handleViewChange(viz.id)}
-                whileHover={{ scale: 1.1 }}
-                whileTap={{ scale: 0.95 }}
-                className={`group relative p-3 rounded-lg transition-all duration-200 ${activeView === viz.id
-                  ? 'bg-theme-cyan/30 text-theme-cyan border border-theme shadow-lg'
-                  : 'bg-transparent text-text-tertiary hover:bg-theme-tertiary hover:text-color-cyan'
-                  } ${isTransitioning ? 'opacity-50 pointer-events-none' : ''}`}
-                title={viz.name}
-                disabled={isTransitioning}
-              >
-                <viz.icon size={24} />
-
-                {/* Loading indicator for loaded views */}
-                {loadedViews.has(viz.id) && (
-                  <motion.div
-                    initial={{ scale: 0 }}
-                    animate={{ scale: 1 }}
-                    className="absolute -top-1 -right-1 w-3 h-3 bg-green-400 rounded-full border-2 border-theme-tertiary"
-                  />
-                )}
-
-                <motion.div
-                  className="hidden md:block absolute right-full top-1/2 -translate-y-1/2 mr-3 pointer-events-none opacity-0 group-hover:opacity-100 transition duration-300"
-                  initial={{ scale: 0.8 }}
-                  whileInView={{ scale: 1 }}
-                >
-                  <div className="bg-theme-secondary text-text-primary text-xs rounded py-1 px-3 shadow-xl whitespace-nowrap border border-theme">
-                    {viz.name}
-                  </div>
-                </motion.div>
-              </motion.button>
-            ))}
-          </div>
-        </motion.div>
-      )}
-    </AnimatePresence>
-  );
+  ), [activeView, activeVisualization]);
 
   const renderVisualizationPane = () => (
     <motion.div
@@ -529,24 +575,34 @@ export function InteractiveVizSelector() {
   );
 
   return (
-    <section ref={sectionRef} className="visualization-section bg-gray-900 text-white py-16 min-h-screen relative overflow-hidden">
+    <section ref={sectionRef} className="visualization-section bg-grid bg-gray-900 text-white py-16 min-h-screen relative overflow-hidden">
+      <div className="aurora-bg"></div>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header */}
-        <motion.div
+        <motion.header
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6 }}
           viewport={{ once: true }}
           className="text-center mb-12"
         >
-          <h2 className="text-4xl font-extrabold text-indigo-400">
-            Infrastructure Visualization Platform
-          </h2>
-          <p className="mt-4 text-xl text-gray-400 max-w-3xl mx-auto">
-            Interactive analysis of your Terraform infrastructure with dependency mapping,
-            resource analytics, and comprehensive state visualization
-          </p>
-        </motion.div>
+          <div className="text-left">
+            <div className="flex items-center gap-2 mb-2" style={{ color: 'var(--color-cyan)' }}>
+              <PaintBucket size={18} />
+              <span className="text-xs font-bold tracking-[0.2em] uppercase">Interactive Tool</span>
+            </div>
+
+            <h1 className="text-4xl md:text-5xl font-bold mb-2" style={{ color: 'var(--text-primary)' }}>
+              Visual <span className="gradient-text">Explorer</span>
+            </h1>
+
+            <p className="text-sm md:text-base text-gray-400">
+              Visualize every component, connection, and states dynamically. Switch between dashboard, graph and other views with ease.
+            </p>
+          </div>
+
+
+        </motion.header>
 
         {/* Integrated Content and Visualization Area */}
         <div ref={containerRef} className="flex flex-col lg:flex-row gap-8 relative">
@@ -560,8 +616,15 @@ export function InteractiveVizSelector() {
         </div>
       </div>
 
-      {/* Floating Side Dock Navigation */}
-      <VizSideDock isVisible={isVisible && !isTransitioning} />
+      {/* Floating Side Dock Navigation - Now using the external component */}
+      <VizSideDock
+        isVisible={isVisible && !isTransitioning}
+        allVisualizations={allVisualizations}
+        activeView={activeView}
+        isTransitioning={isTransitioning}
+        loadedViews={loadedViews}
+        handleViewChange={handleViewChange}
+      />
     </section>
   );
 }

@@ -1,7 +1,7 @@
 .features-container {
   position: relative;
   min-height: 100vh;
-  background: var(--gradient-bg);
+  background: var(--bg-primary);
   padding: clamp(3rem, 8vw, 8rem) clamp(1rem, 4vw, 2rem);
   overflow: hidden;
   perspective: 2000px;

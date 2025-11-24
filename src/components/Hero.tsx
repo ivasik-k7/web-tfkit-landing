@@ -13,9 +13,6 @@ export function Hero() {
       {/* Particle Field */}
       <div className="hero-particles" />
 
-      {/* Quantum Orbs */}
-      <div className="hero-glow hero-glow-cyan" />
-      <div className="hero-glow hero-glow-purple" />
 
       {/* Content */}
       <div className="hero-content">
@@ -54,7 +51,6 @@ export function Hero() {
         </motion.div>
       </div>
 
-      {/* Cyber Scroll Indicator */}
       <div className="hero-scroll-indicator">
         <ChevronDownIcon className="hero-scroll-icon" />
       </div>

@@ -89,11 +89,6 @@ export function Footer() {
     return (
         <footer className="footer-section">
             {/* Animated background elements */}
-            <div className="footer-background">
-                <div className="footer-orb orb-1" />
-                <div className="footer-orb orb-2" />
-                <div className="footer-grid" />
-            </div>
 
             <div className="footer-container">
                 {/* Main Footer Content */}
@@ -104,16 +99,14 @@ export function Footer() {
                     viewport={{ once: true }}
                     className="footer-content"
                 >
-                    {/* Brand Section */}
                     <div className="footer-brand">
-                        <motion.div
+                        <motion.header
                             whileHover={{ scale: 1.05 }}
                             transition={{ type: "spring", stiffness: 300 }}
                             className="brand-logo"
                         >
                             <h3 className="footer-logo gradient-text">TFKit</h3>
-                            {/* <div className="logo-glow" /> */}
-                        </motion.div>
+                        </motion.header>
 
                         <p className="footer-tagline">
                             Terraform Intelligence & Analysis Suite
